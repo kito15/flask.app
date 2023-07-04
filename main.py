@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, session, requests, jsonify
+from flask import Flask, Blueprint, session, request, jsonify
 from zoom_authorize import zoom_blueprint
 
 # Create Flask app
