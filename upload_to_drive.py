@@ -60,7 +60,6 @@ def upload_callback():
     # Exchange the authorization code for a token
     flow.fetch_token(authorization_response=request.url)
 
-
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
@@ -68,10 +67,8 @@ def upload_callback():
 
     # Start a background task for uploading videos
     executor.submit(upload_videos, recordings, drive_service)
-
-
     return 'Video upload process started!'
-
+    
 def upload_videos(recordings, drive_service):
     for recording in recordings:
         topic_name = recording.get('topic')
@@ -94,11 +91,11 @@ def upload_videos(recordings, drive_service):
 
         recording['folder_id'] = folder_id  # Store the folder ID alongside the recording
 
-        for files in recording['recording_files']:
+        for file in recording['recording_files']:
             # Check if the status is "completed" and the file extension is "mp4"
-            if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+            if file['status'] == 'completed' and file['file_extension'] == 'MP4':
                 # Fetch the video file from the download URL
-                download_url = files['download_url']
+                download_url = file['download_url']
                 response = requests.get(download_url)
                 video_content = response.content
 
