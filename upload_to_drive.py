@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
+from celery import Celery
 
 # Set up Flask app
 upload_blueprint = Blueprint('upload', __name__)
@@ -31,6 +32,13 @@ flow = Flow.from_client_secrets_file(
     scopes=SCOPES,
     redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
 )
+
+# Create a Celery app
+app = Flask(__name__)
+app.config['CELERY_BROKER_URL'] = os.environ.get('REDIS_URL')
+app.config['CELERY_RESULT_BACKEND'] = os.environ.get('REDIS_URL')
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
 
 # Redirect user to Google for authentication
 @upload_blueprint.route('/')
@@ -57,8 +65,13 @@ def upload_callback():
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
 
+    # Process recordings in the background using Celery
+    process_recordings.delay(recordings, drive_service)
 
-    # Iterate over the recordings
+    return 'Video upload task has started!'
+
+@celery.task
+def process_recordings(recordings, drive_service):
     for recording in recordings:
         for files in recording['recording_files']:
             # Check if the status is "completed" and the file extension is "mp4"
@@ -78,4 +91,5 @@ def upload_callback():
                     fields='id'
                 ).execute()
 
-    return 'Video uploaded successfully!'
+    return 'Video upload completed!'
+
