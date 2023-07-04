@@ -9,7 +9,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import concurrent.futures
 from download import download_zoom_recordings
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Set up Flask app
 upload_blueprint = Blueprint('upload', __name__)
@@ -74,55 +74,57 @@ def upload_videos(recordings, drive_service):
     folder_ids = {}  # Dictionary to store topic names and their corresponding folder IDs
     upload_tasks = []  # List to store the upload tasks
 
-    for recording in recordings:
-        topic_name = recording.get('topic')
-        folder_name = topic_name.replace(' ', '_')  # Replace spaces with underscores to create folder name
+    with ThreadPoolExecutor() as executor:
+        for recording in recordings:
+            topic_name = recording.get('topic')
+            folder_name = topic_name.replace(' ', '_')  # Replace spaces with underscores to create folder name
 
-        if folder_name in folder_ids:
-            folder_id = folder_ids[folder_name]
-        else:
-            # Check if the folder already exists in Google Drive
-            folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
-            existing_folders = drive_service.files().list(q=folder_query, fields='files(id)').execute()
-
-            if existing_folders.get('files'):
-                folder_id = existing_folders['files'][0]['id']
-                folder_ids[folder_name] = folder_id
+            if folder_name in folder_ids:
+                folder_id = folder_ids[folder_name]
             else:
-                # Create the folder in Google Drive
-                folder_metadata = {
-                    'name': folder_name,
-                    'mimeType': 'application/vnd.google-apps.folder'
-                }
-                folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
-                folder_id = folder['id']
-                folder_ids[folder_name] = folder_id
+                # Check if the folder already exists in Google Drive
+                folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
+                existing_folders = drive_service.files().list(q=folder_query, fields='files(id)').execute()
 
-        for files in recording['recording_files']:
-            # Check if the status is "completed" and the file extension is "mp4"
-            if files['status'] == 'completed' and files['file_extension'] == 'MP4':
-                # Fetch the video file from the download URL
-                download_url = files['download_url']
-                response = requests.get(download_url)
-                video_content = response.content
+                if existing_folders.get('files'):
+                    folder_id = existing_folders['files'][0]['id']
+                    folder_ids[folder_name] = folder_id
+                else:
+                    # Create the folder in Google Drive
+                    folder_metadata = {
+                        'name': folder_name,
+                        'mimeType': 'application/vnd.google-apps.folder'
+                    }
+                    folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
+                    folder_id = folder['id']
+                    folder_ids[folder_name] = folder_id
 
-                # Upload the video to the existing or newly created folder in Google Drive
-                file_name = topic_name + '.mp4'
-                file_metadata = {
-                    'name': file_name,
-                    'parents': [folder_id]
-                }
-                media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                upload_task = drive_service.files().create(
-                    body=file_metadata,
-                    media_body=media,
-                    fields='id'
-                ).execute()
-                upload_tasks.append(upload_task)
+            for files in recording['recording_files']:
+                # Check if the status is "completed" and the file extension is "mp4"
+                if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+                    # Fetch the video file from the download URL
+                    download_url = files['download_url']
+                    response = requests.get(download_url)
+                    video_content = response.content
 
-    # Wait for all the upload tasks to complete
-    for future in concurrent.futures.as_completed(upload_tasks):
-        result = future.result()
-        # You can perform any necessary actions with the result if needed
+                    # Upload the video to the existing or newly created folder in Google Drive
+                    file_name = topic_name + '.mp4'
+                    file_metadata = {
+                        'name': file_name,
+                        'parents': [folder_id]
+                    }
+                    media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
+                    upload_task = executor.submit(
+                        drive_service.files().create,
+                        body=file_metadata,
+                        media_body=media,
+                        fields='id'
+                    )
+                    upload_tasks.append(upload_task)
+
+        # Wait for all the upload tasks to complete
+        for future in as_completed(upload_tasks):
+            result = future.result()
+            # You can perform any necessary actions with the result if needed
 
     print('Video upload completed!')
