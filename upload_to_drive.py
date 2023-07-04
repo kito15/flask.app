@@ -36,25 +36,25 @@ flow = Flow.from_client_secrets_file(
 def background_upload_videos(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
-        # Iterate over the recordings
-        for recording in recordings:
-            for files in recording['recording_files']:
-                # Check if the status is "completed" and the file extension is "mp4"
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4':
-                    # Fetch the video file from the download URL
-                    download_url = files['download_url']
-                    
-                    response = requests.get(download_url)
-                    video_content = response.content
-                    # Upload the video to Google Drive
-                    file_name = recording.get('topic') + '.mp4'
-                    file_metadata = {'name': file_name}
-                    media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                    drive_service.files().create(
-                        body=file_metadata,
-                        media_body=media,
-                        fields='id'
-                    ).execute()
+    # Iterate over the recordings
+    for recording in recordings:
+        for files in recording['recording_files']:
+            # Check if the status is "completed" and the file extension is "mp4"
+            if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+                # Fetch the video file from the download URL
+                download_url = files['download_url']
+                
+                response = requests.get(download_url)
+                video_content = response.content
+                # Upload the video to Google Drive
+                file_name = recording.get('topic') + '.mp4'
+                file_metadata = {'name': file_name}
+                media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
+                drive_service.files().create(
+                    body=file_metadata,
+                    media_body=media,
+                    fields='id'
+                ).execute()
 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
