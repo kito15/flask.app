@@ -11,7 +11,7 @@ upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
-@upload_blueprint.route('/upload')
+@upload_blueprint.route('/upload_callback')
 def upload():
     access_token = session.get('zoom_access_token')
     recordings_data = download_zoom_recordings(access_token)
