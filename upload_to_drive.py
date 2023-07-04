@@ -1,130 +1,153 @@
-import os
-import requests
-import io
-import tempfile
+from flask import Blueprint, session
 from datetime import datetime
-from flask import Flask, redirect, request, Blueprint, current_app, session
+import io
+import requests
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-import concurrent.futures
-from download import download_zoom_recordings
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Set up Flask app
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
-executor = ThreadPoolExecutor()
-
-# Google OAuth 2.0 configuration
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-CLIENT_SECRETS_FILE = 'client_secrets.json'
-SCOPES = [
-    'https://www.googleapis.com/auth/drive.file',
-    'https://www.googleapis.com/auth/drive',
-    'openid',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile'
-]
-API_VERSION = 'v3'
 
-# Create the Flow instance
-flow = Flow.from_client_secrets_file(
-    CLIENT_SECRETS_FILE,
-    scopes=SCOPES,
-    redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
-)
-
-
-# Redirect user to Google for authentication
-@upload_blueprint.route('/')
-def index():
-    authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true'
-    )
-    return redirect(authorization_url)
-
-
-# Callback route after authentication
-@upload_blueprint.route('/upload_callback')
-def upload_callback():
-    # Fetch the authorization code from the callback request
+@upload_blueprint.route('/upload')
+def upload():
     access_token = session.get('zoom_access_token')
-    recordings = download_zoom_recordings(access_token)
-    
-    authorization_code = request.args.get('code')
-    print(recordings)
-    # Exchange the authorization code for a token
-    flow.fetch_token(authorization_response=request.url)
+    recordings_data = download_zoom_recordings(access_token)
 
+    # Step 1: Authenticate and authorize API access
+    credentials = get_credentials()
+    drive_service = build('drive', 'v3', credentials=credentials)
 
-    # Create a Google Drive service instance using the credentials
-    credentials = flow.credentials
-    drive_service = build('drive', API_VERSION, credentials=credentials)
+    # Step 2: Check if the 'Automated Zoom Recordings' folder exists in Google Drive, create it if not
+    automated_folder_name = 'Automated Zoom Recordings'
+    automated_folder_id = get_folder_id(drive_service, automated_folder_name)
 
+    if not automated_folder_id:
+        # Create the 'Automated Zoom Recordings' folder in Google Drive
+        automated_folder_id = create_folder(drive_service, automated_folder_name)
+        print(f'Folder "{automated_folder_name}" created in Google Drive with ID: {automated_folder_id}')
 
-    # Start a background task for uploading videos
-    executor.submit(upload_videos, recordings, drive_service)
+    # Dictionary to store parent folder IDs
+    parent_folders = {'Automated Zoom Recordings': automated_folder_id}
 
+    # Define a function to upload a video file
+    def upload_video(file_metadata, file_content, folder_id):
+        media = MediaIoBaseUpload(io.BytesIO(file_content), mimetype='video/mp4')
+        file = drive_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+        file_id = file['id']
+        print(f'Video file "{file_metadata["name"]}" uploaded to the folder with ID: {file_id}')
 
-    return 'Video upload process started!'
+    # Iterate over each recording in the JSON data
+    for recording in recordings_data:
+        # Extract necessary information from the recording
+        for file in recording['recording_files']:
+            # Check if the status is completed and the file extension is MP4
+            if file['status'] == 'completed' and file['file_extension'] == 'MP4':
+                topic = recording['topic']
+                start_time = recording['start_time']
+                start_datetime = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+                date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
+                video_filename = f"{topic}_{date_string}.mp4"
+                folder_name = topic.replace(" ", "_")  # Replacing spaces with underscores
+                download_url = file['download_url']
 
-def upload_videos(recordings, drive_service):
-    folder_ids = {}  # Dictionary to store topic names and their corresponding folder IDs
-    upload_tasks = []  # List to store the upload tasks
+                folder_exists = False
+                folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
 
-    with ThreadPoolExecutor() as executor:
-        for recording in recordings:
-            topic_name = recording.get('topic')
-            folder_name = topic_name.replace(' ', '_')  # Replace spaces with underscores to create folder name
-
-            if folder_name in folder_ids:
-                folder_id = folder_ids[folder_name]
-            else:
-                # Check if the folder already exists in Google Drive
-                folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
-                existing_folders = drive_service.files().list(q=folder_query, fields='files(id)').execute()
-
-                if existing_folders.get('files'):
-                    folder_id = existing_folders['files'][0]['id']
-                    folder_ids[folder_name] = folder_id
+                # Check if the parent folder exists in the parent_folders dictionary
+                if folder_name in parent_folders:
+                    # Use the existing parent folder ID
+                    parent_id = parent_folders[folder_name]
                 else:
-                    # Create the folder in Google Drive
-                    folder_metadata = {
-                        'name': folder_name,
-                        'mimeType': 'application/vnd.google-apps.folder'
-                    }
-                    folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
-                    folder_id = folder['id']
-                    folder_ids[folder_name] = folder_id
+                    # Check if the folder already exists within the parent folder
+                    parent_id = get_folder_id(drive_service, folder_name, automated_folder_id)
 
-            for files in recording['recording_files']:
-                # Check if the status is "completed" and the file extension is "mp4"
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4':
-                    # Fetch the video file from the download URL
-                    download_url = files['download_url']
-                    response = requests.get(download_url)
-                    video_content = response.content
+                    if parent_id:
+                        parent_folders[folder_name] = parent_id
+                        print(f'Folder "{folder_name}" already exists in Google Drive with ID: {parent_id}')
+                    else:
+                        # Create the parent folder in Google Drive
+                        parent_id = create_folder(drive_service, folder_name, automated_folder_id)
+                        parent_folders[folder_name] = parent_id
+                        print(f'Folder "{folder_name}" created in Google Drive with ID: {parent_id}')
 
-                    # Upload the video to the existing or newly created folder in Google Drive
-                    file_name = topic_name + '.mp4'
+                # Step 5: Download the video file to in-memory storage
+                response = requests.get(download_url)
+                file_content = response.content
+                # Step 6: Upload the video file to the folder in Google Drive
+                file_exists = False
+                video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
+
+                file_id = get_file_id(drive_service, video_filename, parent_id)
+                if file_id:
+                    file_exists = True
+                    print(f'Video file "{video_filename}" already exists in the folder with ID: {file_id}')
+
+                if not file_exists:
+                    # Upload the video file to the folder in Google Drive
                     file_metadata = {
-                        'name': file_name,
-                        'parents': [folder_id]
+                        'name': video_filename,
+                        'parents': [parent_id]
                     }
-                    media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                    upload_task = executor.submit(
-                        drive_service.files().create,
-                        body=file_metadata,
-                        media_body=media,
-                        fields='id'
-                    )
-                    upload_tasks.append(upload_task)
+                    upload_video(file_metadata, file_content, parent_id)
 
-        # Wait for all the upload tasks to complete
-        for future in as_completed(upload_tasks):
-            result = future.result()
-            # You can perform any necessary actions with the result if needed
+    return 'Upload completed!'
 
-    print('Video upload completed!')
+
+def get_credentials():
+    # Replace with your client_id and client_secret from the Google Cloud Console
+    client_id = '21876034997-mjfsr5ojhnrmspao3ud5er3babhtvn0s.apps.googleusercontent.com'
+    client_secret = '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'
+    scopes = ['https://www.googleapis.com/auth/drive']
+    redirect_uri = 'https://flask-production-d5a3.up.railway.app/upload_callback'
+
+    flow = Flow.from_client_secrets_file(
+        'client_secret.json',
+        scopes=scopes,
+        redirect_uri=redirect_uri
+    )
+    auth_url, _ = flow.authorization_url(prompt='consent')
+
+    # Redirect the user to the auth_url and get the authorization code from the callback URL
+    # Handle the authorization code exchange to obtain the access token
+    # Return the credentials object
+    # See the Google Auth Python library documentation for detailed instructions: https://google-auth.readthedocs.io/en/latest/
+
+    return credentials
+
+
+def get_folder_id(drive_service, folder_name, parent_folder_id=None):
+    query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+    if parent_folder_id:
+        query += f" and '{parent_folder_id}' in parents"
+    response = drive_service.files().list(q=query, fields='files(id)').execute()
+    folders = response.get('files', [])
+    if folders:
+        return folders[0]['id']
+    return None
+
+
+def create_folder(drive_service, folder_name, parent_folder_id=None):
+    folder_metadata = {
+        'name': folder_name,
+        'mimeType': 'application/vnd.google-apps.folder'
+    }
+    if parent_folder_id:
+        folder_metadata['parents'] = [parent_folder_id]
+
+    folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
+    return folder['id']
+
+
+def get_file_id(drive_service, file_name, folder_id):
+    query = f"name='{file_name}' and '{folder_id}' in parents and trashed=false"
+    response = drive_service.files().list(q=query, fields='files(id)').execute()
+    files = response.get('files', [])
+    if files:
+        return files[0]['id']
+    return None
