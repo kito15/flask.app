@@ -33,7 +33,7 @@ API_VERSION = 'v3'
 flow = Flow.from_client_secrets_file(
     CLIENT_SECRETS_FILE,
     scopes=SCOPES,
-    redirect_uri='https://zoom-to-drive.onrender.com/upload_callback'  # Replace with your domain
+    redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
 )
 
 
