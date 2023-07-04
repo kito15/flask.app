@@ -73,31 +73,26 @@ def upload_callback():
     return 'Video upload process started!'
 
 def upload_videos(recordings, drive_service):
-    folder_ids = {}  # Dictionary to store topic names and their corresponding folder IDs
-    
     for recording in recordings:
         topic_name = recording.get('topic')
         folder_name = topic_name.replace(' ', '_')  # Replace spaces with underscores to create folder name
 
-        if folder_name in folder_ids:
-            folder_id = folder_ids[folder_name]
-        else:
-            # Check if the folder already exists in Google Drive
-            folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
-            existing_folders = drive_service.files().list(q=folder_query, fields='files(id)').execute()
+        # Check if the folder already exists in Google Drive
+        folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
+        existing_folders = drive_service.files().list(q=folder_query, fields='files(id)').execute()
 
-            if existing_folders.get('files'):
-                folder_id = existing_folders['files'][0]['id']
-                folder_ids[folder_name] = folder_id
-            else:
-                # Create the folder in Google Drive
-                folder_metadata = {
-                    'name': folder_name,
-                    'mimeType': 'application/vnd.google-apps.folder'
-                }
-                folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
-                folder_id = folder['id']
-                folder_ids[folder_name] = folder_id
+        if existing_folders.get('files'):
+            folder_id = existing_folders['files'][0]['id']
+        else:
+            # Create the folder in Google Drive
+            folder_metadata = {
+                'name': folder_name,
+                'mimeType': 'application/vnd.google-apps.folder'
+            }
+            folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
+            folder_id = folder['id']
+
+        recording['folder_id'] = folder_id  # Store the folder ID alongside the recording
 
         for files in recording['recording_files']:
             # Check if the status is "completed" and the file extension is "mp4"
@@ -107,7 +102,7 @@ def upload_videos(recordings, drive_service):
                 response = requests.get(download_url)
                 video_content = response.content
 
-                # Upload the video to the existing or newly created folder in Google Drive
+                # Upload the video to the folder in Google Drive
                 file_name = topic_name + '.mp4'
                 file_metadata = {
                     'name': file_name,
