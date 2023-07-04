@@ -1,5 +1,4 @@
 from flask import Flask, Blueprint, session, request, jsonify
-from upload_to_drive import upload_blueprint
 from zoom_authorize import zoom_blueprint
 
 # Create Flask app
