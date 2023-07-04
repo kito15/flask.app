@@ -7,6 +7,7 @@ from flask import Flask, redirect, request, Blueprint, current_app, session
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
+import concurrent.futures
 from download import download_zoom_recordings
 from concurrent.futures import ThreadPoolExecutor
 
@@ -71,7 +72,8 @@ def upload_callback():
 
 def upload_videos(recordings, drive_service):
     folder_ids = {}  # Dictionary to store topic names and their corresponding folder IDs
-    
+    upload_tasks = []  # List to store the upload tasks
+
     for recording in recordings:
         topic_name = recording.get('topic')
         folder_name = topic_name.replace(' ', '_')  # Replace spaces with underscores to create folder name
@@ -111,10 +113,16 @@ def upload_videos(recordings, drive_service):
                     'parents': [folder_id]
                 }
                 media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                drive_service.files().create(
+                upload_task = drive_service.files().create(
                     body=file_metadata,
                     media_body=media,
                     fields='id'
                 ).execute()
+                upload_tasks.append(upload_task)
+
+    # Wait for all the upload tasks to complete
+    for future in concurrent.futures.as_completed(upload_tasks):
+        result = future.result()
+        # You can perform any necessary actions with the result if needed
 
     print('Video upload completed!')
