@@ -1,6 +1,7 @@
 import rq
 from rq import Queue
 from rq_scheduler import Scheduler
+import redis
 from datetime import datetime, timedelta
 from flask import Flask, Blueprint, session, request, jsonify
 from upload_to_drive import upload_blueprint
