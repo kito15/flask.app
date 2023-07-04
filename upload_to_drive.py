@@ -31,7 +31,14 @@ flow = Flow.from_client_secrets_file(
     scopes=SCOPES,
     redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
 )
-
+@upload_blueprint.route('/')
+def index():
+    authorization_url, state = flow.authorization_url(
+        access_type='offline',
+        include_granted_scopes='true'
+    )
+    return redirect(authorization_url)
+    
 # Background worker for uploading videos
 def background_upload_videos(drive_service):
     access_token = session.get('zoom_access_token')
