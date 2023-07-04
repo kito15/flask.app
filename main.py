@@ -1,7 +1,5 @@
 from flask import Flask, redirect, request
 from google_auth_oauthlib.flow import Flow
-import os 
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 # Replace with your Railway.app domain and redirect URI
 RAILWAY_DOMAIN = "https://flask-production-d5a3.up.railway.app"
 REDIRECT_URI = f"{RAILWAY_DOMAIN}/callback"
