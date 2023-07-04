@@ -51,8 +51,7 @@ def uploadVideos(drive_service):
             if files['status'] == 'completed' and files['file_extension'] == 'MP4':
                 # Fetch the video file from the download URL
                 download_url = files['download_url']
-                print(download_url)
-               
+                
                 response = requests.get(download_url)
                 video_content = response.content
                 # Upload the video to Google Drive
@@ -77,12 +76,6 @@ def upload_callback():
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
-    
-    # Enqueue the uploadVideos function as a background job
-    job = q.enqueue(uploadVideos, drive_service)
-
-    # Schedule the job to be executed in the background
-    scheduled_time = datetime.utcnow() + timedelta(seconds=5)
-    scheduler.enqueue_at(scheduled_time, job)
-
+    uploadVideos(drive_service)
+   
     return 'Video uploaded successfully!'
