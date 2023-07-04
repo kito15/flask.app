@@ -9,3 +9,5 @@ google-auth-oauthlib==0.4.6
 google-auth==2.3.0
 google-api-python-client==2.22.0
 urllib3==1.26.7
+rq==1.9.0
+rq-scheduler==1.2.0
