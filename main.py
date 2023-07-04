@@ -9,7 +9,7 @@ from zoom_authorize import zoom_blueprint
 # Create Flask app
 app = Flask(__name__)
 app.secret_key = '@unblinded2018'
-q = Queue(connection=rq.Connection())
+q = Queue(connection=redis.from_url('redis://default:XqJamtL8Koq8Vvo3VdZj@containers-us-west-91.railway.app:6664'))
 scheduler = Scheduler(queue=q)
 
 # Register blueprints
