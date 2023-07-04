@@ -33,7 +33,7 @@ API_VERSION = 'v3'
 flow = Flow.from_client_secrets_file(
     CLIENT_SECRETS_FILE,
     scopes=SCOPES,
-    redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
+    redirect_uri='urn:ietf:wg:oauth:2.0:oob'  # Use a placeholder redirect URI
 )
 
 
@@ -44,8 +44,9 @@ def index():
         access_type='offline',
         include_granted_scopes='true'
     )
+    # Replace the redirect_uri placeholder with the actual URL
+    authorization_url = authorization_url.replace('urn:ietf:wg:oauth:2.0:oob', 'https://flask-production-d5a3.up.railway.app/upload_callback')
     return redirect(authorization_url)
-
 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
