@@ -77,7 +77,12 @@ def upload_callback():
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
-
-    uploadVideos(drive_service)
     
+    # Enqueue the uploadVideos function as a background job
+    job = q.enqueue(uploadVideos, drive_service)
+
+    # Schedule the job to be executed in the background
+    scheduled_time = datetime.utcnow() + timedelta(seconds=5)
+    scheduler.enqueue_at(scheduled_time, job)
+
     return 'Video uploaded successfully!'
