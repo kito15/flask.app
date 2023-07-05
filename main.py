@@ -20,6 +20,10 @@ def test():
             topic = data.get('topic')
             email=data.get('email')
             
+            # Store email and topic in session
+            session['email'] = email
+            session['topic'] = topic
+            
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
