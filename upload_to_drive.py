@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
+import threading
 
 # Set up Flask app
 upload_blueprint = Blueprint('upload', __name__)
@@ -56,26 +57,30 @@ def upload_callback():
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
 
+    def upload_video(recording, files):
+        # Check if the status is "completed" and the file extension is "mp4"
+        if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+            # Fetch the video file from the download URL
+            download_url = files['download_url']
+            print(download_url)
+            response = requests.get(download_url)
+            video_content = response.content
+
+            # Upload the video to Google Drive
+            file_name = recording.get('topic') + '.mp4'
+            file_metadata = {'name': file_name}
+            media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
+            drive_service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id'
+            ).execute()
+
     # Iterate over the recordings
     for recording in recordings:
         for files in recording['recording_files']:
-            # Check if the status is "completed" and the file extension is "mp4"
-            if files['status'] == 'completed' and files['file_extension'] == 'MP4':
-                # Fetch the video file from the download URL
-                download_url = files['download_url']
-                print(download_url)
-                response = requests.get(download_url)
-                video_content = response.content
+            # Create a new thread for each video upload
+            upload_thread = threading.Thread(target=upload_video, args=(recording, files))
+            upload_thread.start()
 
-
-                # Upload the video to Google Drive
-                file_name = recording.get('topic') + '.mp4'
-                file_metadata = {'name': file_name}
-                media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                drive_service.files().create(
-                    body=file_metadata,
-                    media_body=media,
-                    fields='id'
-                ).execute()
-
-    return 'Video uploaded successfully!'
+    return 'Video upload process started!'
