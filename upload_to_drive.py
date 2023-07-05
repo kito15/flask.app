@@ -1,4 +1,4 @@
-iimport requests
+import requests
 import io
 import os
 import tempfile
@@ -153,6 +153,6 @@ def upload_callback(email,topic):
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
     
-    uploadFiles(drive_service,email,topic)
+    uploadFiles(drive_service)
 
     return 'Video uploaded successfully!'
