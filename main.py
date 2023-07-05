@@ -10,3 +10,19 @@ app.secret_key = '@unblinded2018'
 app.register_blueprint(zoom_blueprint)
 app.register_blueprint(upload_blueprint)
 
+@app.route('/test', methods=['GET', 'POST'])
+def test():
+    if request.method == "GET":
+        return jsonify({"response": "GET"})
+    elif request.method == "POST":
+        try:
+            data = request.get_json(force=True)
+            topic = data.get('topic')
+            email=data.get('email')
+
+            print(topic)
+            print(email)
+          
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({"error": str(e)})
