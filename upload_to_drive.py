@@ -47,6 +47,7 @@ def uploadFiles(drive_service):
     recordings = download_zoom_recordings(access_token)
     
     for recording in recordings:
+        topic = recording['topic']
         folder_name = topic.replace(' ', '_').replace('/', '_')  # Replace spaces and '/' in the topic name
         folder_id = None
         
@@ -69,7 +70,6 @@ def uploadFiles(drive_service):
             folder_id = folder['id']
 
         for files in recording['recording_files']:
-            topic = recording['topic']
             start_time = recording['start_time']
             start_datetime = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
             date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
