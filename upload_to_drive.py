@@ -1,14 +1,12 @@
 import os
 import requests
 import io
-import tempfile
-from datetime import datetime
-from flask import Flask, redirect, request, Blueprint, current_app, session
+from flask import Flask, redirect, request, Blueprint, session
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
-import threading
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Set up Flask app
 upload_blueprint = Blueprint('upload', __name__)
@@ -33,54 +31,52 @@ flow = Flow.from_client_secrets_file(
     redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
 )
 
-# Redirect user to Google for authentication
-@upload_blueprint.route('/')
-def index():
-    authorization_url, state = flow.authorization_url(
-        access_type='offline',
-        include_granted_scopes='true'
-    )
-    return redirect(authorization_url)
+# Create a scheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+# Upload task
+def upload_task():
+    access_token = session.get('zoom_access_token')
+    recordings = download_zoom_recordings(access_token)
+
+    # Create a Google Drive service instance using the credentials
+    credentials = flow.credentials
+    drive_service = build('drive', API_VERSION, credentials=credentials)
+
+    # Iterate over the recordings
+    for recording in recordings:
+        for files in recording['recording_files']:
+            # Check if the status is "completed" and the file extension is "mp4"
+            if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+                # Fetch the video file from the download URL
+                download_url = files['download_url']
+                print(download_url)
+                response = requests.get(download_url)
+                video_content = response.content
+
+                # Upload the video to Google Drive
+                file_name = recording.get('topic') + '.mp4'
+                file_metadata = {'name': file_name}
+                media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
+                drive_service.files().create(
+                    body=file_metadata,
+                    media_body=media,
+                    fields='id'
+                ).execute()
 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
     # Fetch the authorization code from the callback request
     access_token = session.get('zoom_access_token')
-    recordings = download_zoom_recordings(access_token)
     authorization_code = request.args.get('code')
 
     # Exchange the authorization code for a token
     flow.fetch_token(authorization_response=request.url)
 
-    # Create a Google Drive service instance using the credentials
-    credentials = flow.credentials
-    drive_service = build('drive', API_VERSION, credentials=credentials)
+    # Schedule the upload task
+    scheduler.add_job(upload_task, IntervalTrigger(minutes=5))
 
-    def upload_video(recording, files):
-        # Check if the status is "completed" and the file extension is "mp4"
-        if files['status'] == 'completed' and files['file_extension'] == 'MP4':
-            # Fetch the video file from the download URL
-            download_url = files['download_url']
-            print(download_url)
-            response = requests.get(download_url)
-            video_content = response.content
+    return 'Upload task scheduled!'
 
-            # Upload the video to Google Drive
-            file_name = recording.get('topic') + '.mp4'
-            file_metadata = {'name': file_name}
-            media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-            drive_service.files().create(
-                body=file_metadata,
-                media_body=media,
-                fields='id'
-            ).execute()
-
-    # Iterate over the recordings
-    for recording in recordings:
-        for files in recording['recording_files']:
-            # Create a new thread for each video upload
-            upload_thread = threading.Thread(target=upload_video, args=(recording, files))
-            upload_thread.start()
-
-    return 'Video upload process started!'
