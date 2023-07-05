@@ -54,6 +54,7 @@ def share_folder_with_email(drive_service, folder_id, email):
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")     
 
+@upload_blueprint.route('/test', methods=['GET', 'POST'])
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
@@ -140,10 +141,19 @@ def uploadFiles(drive_service):
                 ).execute()
                 email=session.get('email')
                 accountName=session.get('accountName')
-                
-                if accountName in topics:
-                    share_folder_with_email(drive_service, folder_id, email)
-            
+                if request.method == "GET":
+                    return jsonify({"response": "GET"})
+                elif request.method == "POST":
+                    try:
+                        data = request.get_json(force=True)
+                        accountName= data.get('accountName')
+                        email=data.get('email')
+                        if accountName in topics:
+                            share_folder_with_email(drive_service, folder_id, email)
+                        return jsonify(data)
+                    except Exception as e:
+                        return jsonify({"error": str(e)})
+
 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
