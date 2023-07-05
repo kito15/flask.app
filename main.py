@@ -20,8 +20,7 @@ def test():
             accountName = data.get('accountName')
             email=data.get('email')
 
-            print(accountName)
-            print(email)
+            results=store_parameters(accountName,email)
         
             return jsonify(data)
         except Exception as e:
