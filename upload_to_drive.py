@@ -1,12 +1,13 @@
 import os
 import requests
 import io
-from flask import Flask, redirect, request, Blueprint, session
+import tempfile
+from datetime import datetime
+from flask import Flask, redirect, request, Blueprint, current_app, session
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
-from apscheduler.schedulers.background import BackgroundScheduler
 
 # Set up Flask app
 upload_blueprint = Blueprint('upload', __name__)
@@ -30,6 +31,8 @@ flow = Flow.from_client_secrets_file(
     scopes=SCOPES,
     redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
 )
+
+# Redirect user to Google for authentication
 @upload_blueprint.route('/')
 def index():
     authorization_url, state = flow.authorization_url(
@@ -38,14 +41,17 @@ def index():
     )
     return redirect(authorization_url)
 
-# Create a scheduler
-scheduler = BackgroundScheduler()
-scheduler.start()
 
-# Upload task
-def upload_task():
+# Callback route after authentication
+@upload_blueprint.route('/upload_callback')
+def upload_callback():
+    # Fetch the authorization code from the callback request
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
+    authorization_code = request.args.get('code')
+
+    # Exchange the authorization code for a token
+    flow.fetch_token(authorization_response=request.url)
 
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
@@ -53,18 +59,59 @@ def upload_task():
 
     # Iterate over the recordings
     for recording in recordings:
+        topic = recording['topic']
+        start_time = recording['start_time']
+        start_datetime = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+        date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
+        video_filename = f"{topic}_{date_string}.mp4"
+
+        folder_name = topic.replace('/', '_')  # Replace '/' in the topic name to avoid creating subfolders
+        folder_id = None
+
+        # Check if the folder already exists
+        results = drive_service.files().list(
+            q=f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'",
+            fields='files(id)',
+            spaces='drive'
+        ).execute()
+
+        if len(results['files']) > 0:
+            folder_id = results['files'][0]['id']
+        else:
+            # Create the folder if it doesn't exist
+            file_metadata = {
+                'name': folder_name,
+                'mimeType': 'application/vnd.google-apps.folder'
+            }
+            folder = drive_service.files().create(body=file_metadata, fields='id').execute()
+            folder_id = folder['id']
+
         for files in recording['recording_files']:
             # Check if the status is "completed" and the file extension is "mp4"
             if files['status'] == 'completed' and files['file_extension'] == 'MP4':
                 # Fetch the video file from the download URL
                 download_url = files['download_url']
-                print(download_url)
                 response = requests.get(download_url)
                 video_content = response.content
 
-                # Upload the video to Google Drive
-                file_name = recording.get('topic') + '.mp4'
-                file_metadata = {'name': file_name}
+                # Check if a file with the same name already exists in the folder
+                query = f"name='{video_filename}' and '{folder_id}' in parents"
+                existing_files = drive_service.files().list(
+                    q=query,
+                    fields='files(id)',
+                    spaces='drive'
+                ).execute()
+
+                if len(existing_files['files']) > 0:
+                    # File with the same name already exists, skip uploading
+                    print(f"Skipping upload of '{video_filename}' as it already exists.")
+                    continue
+
+                # Upload the video to the folder in Google Drive
+                file_metadata = {
+                    'name': video_filename,
+                    'parents': [folder_id]
+                }
                 media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
                 drive_service.files().create(
                     body=file_metadata,
@@ -72,18 +119,4 @@ def upload_task():
                     fields='id'
                 ).execute()
 
-# Callback route after authentication
-@upload_blueprint.route('/upload_callback')
-def upload_callback():
-    # Fetch the authorization code from the callback request
-    access_token = session.get('zoom_access_token')
-    authorization_code = request.args.get('code')
-
-    # Exchange the authorization code for a token
-    flow.fetch_token(authorization_response=request.url)
-
-    # Schedule the upload task
-    scheduler.add_job(upload_task, IntervalTrigger(minutes=5))
-
-    return 'Upload task scheduled!'
-
+    return 'Video uploaded successfully!'
