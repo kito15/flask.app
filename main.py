@@ -20,7 +20,7 @@ def test():
             accountName = data.get('accountName')
             email=data.get('email')
 
-            results=store_parameters(email,accountName)
+            results=store_parameters(accountName,email)
             print(retrieve_parameters())
             
             return jsonify(data)
