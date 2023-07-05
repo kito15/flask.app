@@ -54,6 +54,7 @@ def share_folder_with_email(drive_service, folder_id, email):
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")
         
+@upload_blueprint.route('/upload', methods=['POST'])
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
@@ -77,8 +78,12 @@ def uploadFiles(drive_service):
         recordings_folder_id = recordings_folder['id']
         
     for recording in recordings:
-        topic = recording['topic']
-        folder_name = topic.replace(" ", "_")  # Replacing spaces with underscores
+        data = request.get_json(force=True)
+        topic = data.get('topic')
+        email = data.get('email')
+        
+        topics = recording['topic']
+        folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
         folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
         folder_id = None
         
@@ -105,7 +110,7 @@ def uploadFiles(drive_service):
             start_time = recording['start_time']
             start_datetime = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
             date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
-            video_filename = f"{topic}_{date_string}.mp4"
+            video_filename = f"{topics}_{date_string}.mp4"
 
             if files['status'] == 'completed' and files['file_extension'] == 'MP4':
                 # Fetch the video file from the download URL
@@ -138,6 +143,8 @@ def uploadFiles(drive_service):
                     media_body=media,
                     fields='id'
                 ).execute()
+            return jsonify({"response": "Uploaded successfully"})
+
                 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
