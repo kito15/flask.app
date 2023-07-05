@@ -52,21 +52,7 @@ def share_folder_with_email(drive_service, folder_id, email):
         drive_service.permissions().create(fileId=folder_id, body=permission).execute()
         print(f"Folder shared with email: {email}")
     except errors.HttpError as e:
-        print(f"Error sharing folder with email: {email}. Error: {str(e)}")
-        
-@upload_blueprint.route('/test', methods=['GET', 'POST'])
-def test():
-    if request.method == "GET":
-        return jsonify({"response": "GET"})
-    elif request.method == "POST":
-        try:
-            data = request.get_json(force=True)
-            topic = data.get('topic')
-            email=data.get('email')
-            
-            return jsonify(data)
-        except Exception as e:
-            return jsonify({"error": str(e)})
+        print(f"Error sharing folder with email: {email}. Error: {str(e)}")     
 
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
