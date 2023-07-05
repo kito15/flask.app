@@ -20,7 +20,6 @@ def test():
             topic = data.get('topic')
             email=data.get('email')
             
-            response=upload_callback(email,topic)
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
