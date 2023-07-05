@@ -78,10 +78,6 @@ def uploadFiles(drive_service):
         recordings_folder_id = recordings_folder['id']
         
     for recording in recordings:
-        data = request.get_json(force=True)
-        topic = data.get('topic')
-        email = data.get('email')
-        
         topics = recording['topic']
         folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
         folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
