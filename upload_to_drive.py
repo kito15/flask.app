@@ -47,9 +47,9 @@ def uploadFiles(drive_service):
     recordings = download_zoom_recordings(access_token)
     
     for recording in recordings:
-        folder_name = topic.replace(" ", "_")  # Replacing spaces with underscores
+        folder_name = topic.replace(' ', '_').replace('/', '_')  # Replace spaces and '/' in the topic name
         folder_id = None
-
+        
         # Check if the folder already exists
         results = drive_service.files().list(
             q=f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'",
