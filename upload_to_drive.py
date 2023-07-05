@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
+from celery import Celery
 
 # Set up Flask app
 upload_blueprint = Blueprint('upload', __name__)
