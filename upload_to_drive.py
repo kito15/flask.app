@@ -155,4 +155,9 @@ def upload_callback():
     
     uploadFiles(drive_service)
 
+    email=session.get('email')
+    topic=session.get('topic')
+    
+    print(email)
+    print(topic)
     return "Recordings are being uploaded"
