@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, session, request, jsonify
-from upload_to_drive import upload_blueprint
+from upload_to_drive import upload_blueprint, upload_callback
 from zoom_authorize import zoom_blueprint
 
 # Create Flask app
@@ -19,7 +19,8 @@ def test():
             data = request.get_json(force=True)
             topic = data.get('topic')
             email=data.get('email')
-            
+
+            response=upload_callback(email,topic)
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
