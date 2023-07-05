@@ -149,10 +149,12 @@ def uploadFiles(drive_service):
                     fields='id'
                 ).execute()
                 
-                """ if accountName in topics:
-                    share_folder_with_email(drive_service, folder_id, email)"""
+                params=retrieve_parameters()
+                accountName=params[0]
+                
+                if accountName in topics:
+                    share_folder_with_email(drive_service, folder_id, email)
                     
-
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
