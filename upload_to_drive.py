@@ -54,9 +54,8 @@ def share_folder_with_email(drive_service, folder_id, email):
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")     
 def store_parameters(email, accountName):
-    email = email
-    accountName = accountName
-    return email, accountName
+    print(email)
+    print(accountName)
 
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
