@@ -67,8 +67,8 @@ def uploadFiles(drive_service):
         
     for recording in recordings:
         topic = recording['topic']
-        folder_name = topic.replace(' ', '_').replace('/', '_')  # Replace spaces and '/' in the topic name
-        folder_name = urllib.parse.quote(folder_name)  # Encode special characters in the folder name
+        folder_name = topic.replace(" ", "_")  # Replacing spaces with underscores
+        folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
         folder_id = None
         
         # Check if the folder already exists within "Automated Zoom Recordings"
@@ -101,8 +101,8 @@ def uploadFiles(drive_service):
                 download_url = files['download_url']
                 response = requests.get(download_url)
                 video_content = response.content
-                video_filename = urllib.parse.quote(video_filename)
-
+                video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
+                
                 # Check if a file with the same name already exists in the folder
                 query = f"name='{video_filename}' and '{folder_id}' in parents"
                 existing_files = drive_service.files().list(
