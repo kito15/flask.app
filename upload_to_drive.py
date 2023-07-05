@@ -53,10 +53,17 @@ def share_folder_with_email(drive_service, folder_id, email):
         print(f"Folder shared with email: {email}")
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")     
-def store_parameters(email, accountName):
-    print(email)
-    print(accountName)
+        
+stored_params = []
 
+def store_parameters(email, accountName):
+    global stored_params
+    stored_params=[email,accountName]
+    
+def retrieve_parameters():
+    global stored_params
+    return stored_params
+    
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
@@ -141,7 +148,9 @@ def uploadFiles(drive_service):
                     media_body=media,
                     fields='id'
                 ).execute()
-                
+
+                test=retrieve_parameters()
+                print(test)
                 """ if accountName in topics:
                     share_folder_with_email(drive_service, folder_id, email)"""
                     
