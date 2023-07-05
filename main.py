@@ -17,7 +17,10 @@ def test():
     elif request.method == "POST":
         try:
             data = request.get_json(force=True)
-            resp=upload_callback(data)
-            return jsonify(resp)
+            topic = data.get('topic')
+            email=data.get('email')
+            
+            return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
+
