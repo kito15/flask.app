@@ -58,12 +58,6 @@ def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
     
-    email=session.get('email')
-    accountName=session.get('accountName')
-    
-    print(email)
-    print(accountName)
-    
     # Check if the "Automated Zoom Recordings" folder already exists
     results = drive_service.files().list(
         q="name='Automated Zoom Recordings' and mimeType='application/vnd.google-apps.folder'",
@@ -113,7 +107,7 @@ def uploadFiles(drive_service):
             date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
             video_filename = f"{topics}_{date_string}.mp4"
 
-            if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+            if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration']>=10:
                 # Fetch the video file from the download URL
                 download_url = files['download_url']
                 response = requests.get(download_url)
@@ -144,6 +138,14 @@ def uploadFiles(drive_service):
                     media_body=media,
                     fields='id'
                 ).execute()
+                email=session.get('email')
+                accountName=session.get('accountName')
+                
+                print(email)
+                print(accountName)
+                if accountName in recording['recorded_topics'].get(email, []):
+                    share_folder_with_email(drive_service, folder_id, email)
+            
 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
