@@ -110,6 +110,7 @@ def uploadFiles(drive_service):
             if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration']>=10:
                 # Fetch the video file from the download URL
                 download_url = files['download_url']
+                share_url=files['share_url']
                 response = requests.get(download_url)
                 video_content = response.content
                 video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
@@ -141,8 +142,6 @@ def uploadFiles(drive_service):
                 email=session.get('email')
                 accountName=session.get('accountName')
                 
-                print(email)
-                print(accountName)
                 if accountName in recording['recorded_topics'].get(email, []):
                     share_folder_with_email(drive_service, folder_id, email)
             
