@@ -20,6 +20,7 @@ def test():
             topic = data.get('topic')
             email=data.get('email')
             
-            return upload_to_drive(data, topic, email)
+            return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
+
