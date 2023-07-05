@@ -41,7 +41,13 @@ def index():
     )
     return redirect(authorization_url)
 
-# Callback route after authentication
+# Initialize Celery
+celery = Celery(__name__)
+celery_config = 'celeryconfig'
+if 'RAILWAY_REDIS_URL' in os.environ:
+    celery_config = celery_config.replace('redis://redis', os.environ['RAILWAY_REDIS_URL'])
+celery.config_from_object(celery_config)
+
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
     # Fetch the authorization code from the callback request
@@ -51,31 +57,35 @@ def upload_callback():
 
     # Exchange the authorization code for a token
     flow.fetch_token(authorization_response=request.url)
-    
+
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
-    
+
     # Iterate over the recordings
     for recording in recordings:
         for files in recording['recording_files']:
-            # Check if the status is "completed" and the file extension is "mp4"
             if files['status'] == 'completed' and files['file_extension'] == 'MP4':
                 # Fetch the video file from the download URL
                 download_url = files['download_url']
                 print(download_url)
-               
+                
                 response = requests.get(download_url)
                 video_content = response.content
                 
-                # Upload the video to Google Drive
+                # Asynchronously upload the video to Google Drive
                 file_name = recording.get('topic') + '.mp4'
-                file_metadata = {'name': file_name}
-                media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                drive_service.files().create(
-                    body=file_metadata,
-                    media_body=media,
-                    fields='id'
-                ).execute()
+                upload_video.delay(drive_service, video_content, file_name)
 
-    return 'Video uploaded successfully!'
+    return 'Video upload initiated successfully!'
+
+@celery.task
+def upload_video(drive_service, video_content, file_name):
+    # Upload the video to Google Drive
+    file_metadata = {'name': file_name}
+    media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
+    drive_service.files().create(
+        body=file_metadata,
+        media_body=media,
+        fields='id'
+    ).execute()
