@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, session, request, jsonify
-from upload_to_drive import upload_blueprint, store_parameters
+from upload_to_drive import upload_blueprint, store_parameters,retrieve_parameters
 from zoom_authorize import zoom_blueprint
 
 # Create Flask app
@@ -21,7 +21,8 @@ def test():
             email=data.get('email')
 
             results=store_parameters(email,accountName)
-        
+            print(retrieve_parameters())
+            
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
