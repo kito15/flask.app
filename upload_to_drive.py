@@ -56,9 +56,9 @@ def share_folder_with_email(drive_service, folder_id, email):
         
 stored_params = []
 
-def store_parameters(email, accountName):
+def store_parameters(accountName,email):
     global stored_params
-    stored_params=[email,accountName]
+    stored_params=[accountName,email]
     
 def retrieve_parameters():
     global stored_params
