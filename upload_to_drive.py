@@ -58,6 +58,12 @@ def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
     
+    email=session.get('email')
+    topic=session.get('topic')
+    
+    print(email)
+    print(topic)
+    
     # Check if the "Automated Zoom Recordings" folder already exists
     results = drive_service.files().list(
         q="name='Automated Zoom Recordings' and mimeType='application/vnd.google-apps.folder'",
@@ -152,10 +158,5 @@ def upload_callback():
     drive_service = build('drive', API_VERSION, credentials=credentials)
     
     uploadFiles(drive_service)
-
-    email=session.get('email')
-    topic=session.get('topic')
     
-    print(email)
-    print(topic)
     return "Recordings are being uploaded"
