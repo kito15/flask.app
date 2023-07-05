@@ -17,12 +17,12 @@ def test():
     elif request.method == "POST":
         try:
             data = request.get_json(force=True)
-            topic = data.get('topic')
+            accountName = data.get('accountName')
             email=data.get('email')
 
-            print(topic)
+            print(accountName)
             print(email)
-          
+        
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
