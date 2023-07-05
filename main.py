@@ -23,6 +23,9 @@ def test():
             # Store email and topic in session
             session['email'] = email
             session['accountName'] = accountName
+
+            print(email)
+            print(accountName)
             
             return jsonify(data)
         except Exception as e:
