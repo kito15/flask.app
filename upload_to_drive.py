@@ -41,7 +41,7 @@ def index():
         include_granted_scopes='true'
     )
     return redirect(authorization_url)
-
+    
 def share_folder_with_email(drive_service, folder_id, email):
     permission = {
         'type': 'user',
@@ -54,7 +54,20 @@ def share_folder_with_email(drive_service, folder_id, email):
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")
         
-@upload_blueprint.route('/upload', methods=['POST'])
+@upload_blueprint.route('/test', methods=['GET', 'POST'])
+def test():
+    if request.method == "GET":
+        return jsonify({"response": "GET"})
+    elif request.method == "POST":
+        try:
+            data = request.get_json(force=True)
+            topic = data.get('topic')
+            email=data.get('email')
+            
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({"error": str(e)})
+
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
