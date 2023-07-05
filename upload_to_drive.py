@@ -42,8 +42,19 @@ def index():
     )
     return redirect(authorization_url)
 
+def share_folder_with_email(drive_service, folder_id, email):
+    permission = {
+        'type': 'user',
+        'role': 'writer',
+        'emailAddress': email
+    }
+    try:
+        drive_service.permissions().create(fileId=folder_id, body=permission).execute()
+        print(f"Folder shared with email: {email}")
+    except errors.HttpError as e:
+        print(f"Error sharing folder with email: {email}. Error: {str(e)}")
+        
 def uploadFiles(drive_service):
-
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
     
