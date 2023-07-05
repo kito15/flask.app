@@ -1,4 +1,4 @@
-import requests
+iimport requests
 import io
 import os
 import tempfile
@@ -143,7 +143,7 @@ def uploadFiles(drive_service):
                 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
-def upload_callback():
+def upload_callback(email,topic):
     authorization_code = request.args.get('code')
 
     # Exchange the authorization code for a token
@@ -153,6 +153,6 @@ def upload_callback():
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
     
-    uploadFiles(drive_service)
+    uploadFiles(drive_service,email,topic)
 
     return 'Video uploaded successfully!'
