@@ -141,7 +141,7 @@ def uploadFiles(drive_service):
                 email=session.get('email')
                 accountName=session.get('accountName')
                 
-                if accountName in recording['topic'].get(email, []):
+                if accountName in topics:
                     share_folder_with_email(drive_service, folder_id, email)
             
 
