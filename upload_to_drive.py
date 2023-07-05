@@ -59,10 +59,10 @@ def uploadFiles(drive_service):
     recordings = download_zoom_recordings(access_token)
     
     email=session.get('email')
-    topic=session.get('topic')
+    accountName=session.get('accountName')
     
     print(email)
-    print(topic)
+    print(accountName)
     
     # Check if the "Automated Zoom Recordings" folder already exists
     results = drive_service.files().list(
