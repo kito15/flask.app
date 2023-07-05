@@ -41,31 +41,13 @@ def index():
     )
     return redirect(authorization_url)
 
+def uploadFiles(drive_service):
 
-# Callback route after authentication
-@upload_blueprint.route('/upload_callback')
-def upload_callback():
-    # Fetch the authorization code from the callback request
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
-    authorization_code = request.args.get('code')
-
-    # Exchange the authorization code for a token
-    flow.fetch_token(authorization_response=request.url)
-
-    # Create a Google Drive service instance using the credentials
-    credentials = flow.credentials
-    drive_service = build('drive', API_VERSION, credentials=credentials)
-
-    # Iterate over the recordings
+    
     for recording in recordings:
-        topic = recording['topic']
-        start_time = recording['start_time']
-        start_datetime = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
-        date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
-        video_filename = f"{topic}_{date_string}.mp4"
-
-        folder_name = topic.replace('/', '_')  # Replace '/' in the topic name to avoid creating subfolders
+        folder_name = topic.replace(" ", "_")  # Replacing spaces with underscores
         folder_id = None
 
         # Check if the folder already exists
@@ -87,7 +69,12 @@ def upload_callback():
             folder_id = folder['id']
 
         for files in recording['recording_files']:
-            # Check if the status is "completed" and the file extension is "mp4"
+            topic = recording['topic']
+            start_time = recording['start_time']
+            start_datetime = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+            date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
+            video_filename = f"{topic}_{date_string}.mp4"
+
             if files['status'] == 'completed' and files['file_extension'] == 'MP4':
                 # Fetch the video file from the download URL
                 download_url = files['download_url']
@@ -118,5 +105,20 @@ def upload_callback():
                     media_body=media,
                     fields='id'
                 ).execute()
+                
+    
+# Callback route after authentication
+@upload_blueprint.route('/upload_callback')
+def upload_callback():
+    authorization_code = request.args.get('code')
+
+    # Exchange the authorization code for a token
+    flow.fetch_token(authorization_response=request.url)
+
+    # Create a Google Drive service instance using the credentials
+    credentials = flow.credentials
+    drive_service = build('drive', API_VERSION, credentials=credentials)
+    
+    uploadFiles(drive_service)
 
     return 'Video uploaded successfully!'
