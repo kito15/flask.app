@@ -143,7 +143,7 @@ def uploadFiles(drive_service):
                 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
-def upload_callback(email,topic):
+def upload_callback(data):
     authorization_code = request.args.get('code')
 
     # Exchange the authorization code for a token
@@ -152,7 +152,10 @@ def upload_callback(email,topic):
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
     drive_service = build('drive', API_VERSION, credentials=credentials)
+
+    topic = data.get('topic')
+    email=data.get('email')
     
     uploadFiles(drive_service)
 
-    return 'Video uploaded successfully!'
+    return data
