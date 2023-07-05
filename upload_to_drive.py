@@ -65,21 +65,26 @@ def uploadFiles(drive_service):
         recordings_folder = drive_service.files().create(body=file_metadata, fields='id').execute()
         recordings_folder_id = recordings_folder['id']
         
+    existing_folders = {}  # Dictionary to store existing folder names and IDs
+    
+    # Retrieve the list of existing folders within "Automated Zoom Recordings"
+    results = drive_service.files().list(
+        q=f"'{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
+        fields='files(name, id)',
+        spaces='drive'
+    ).execute()
+    
+    for file in results['files']:
+        existing_folders[file['name']] = file['id']
+    
     for recording in recordings:
         topic = recording['topic']
         folder_name = topic.replace(" ", "_")  # Replacing spaces with underscores
         folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
         folder_id = None
         
-        # Check if the folder already exists within "Automated Zoom Recordings"
-        results = drive_service.files().list(
-            q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
-            fields='files(id)',
-            spaces='drive'
-        ).execute()
-
-        if len(results['files']) > 0:
-            folder_id = results['files'][0]['id']
+        if folder_name in existing_folders:
+            folder_id = existing_folders[folder_name]
         else:
             # Create the folder within "Automated Zoom Recordings" if it doesn't exist
             file_metadata = {
@@ -89,6 +94,7 @@ def uploadFiles(drive_service):
             }
             folder = drive_service.files().create(body=file_metadata, fields='id').execute()
             folder_id = folder['id']
+            existing_folders[folder_name] = folder_id
 
         for files in recording['recording_files']:
             start_time = recording['start_time']
