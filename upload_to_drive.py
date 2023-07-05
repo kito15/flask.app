@@ -64,6 +64,8 @@ def retrieve_parameters():
     global stored_params
     return stored_params
     
+print(retrieve_parameters())
+    
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
@@ -148,9 +150,7 @@ def uploadFiles(drive_service):
                     media_body=media,
                     fields='id'
                 ).execute()
-
-                test=retrieve_parameters()
-                print(test)
+                
                 """ if accountName in topics:
                     share_folder_with_email(drive_service, folder_id, email)"""
                     
