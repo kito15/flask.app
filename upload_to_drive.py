@@ -47,15 +47,33 @@ def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
     
+    # Check if the "Automated Zoom Recordings" folder already exists
+    results = drive_service.files().list(
+        q="name='Automated Zoom Recordings' and mimeType='application/vnd.google-apps.folder'",
+        fields='files(id)',
+        spaces='drive'
+    ).execute()
+
+    if len(results['files']) > 0:
+        recordings_folder_id = results['files'][0]['id']
+    else:
+        # Create the "Automated Zoom Recordings" folder if it doesn't exist
+        file_metadata = {
+            'name': 'Automated Zoom Recordings',
+            'mimeType': 'application/vnd.google-apps.folder'
+        }
+        recordings_folder = drive_service.files().create(body=file_metadata, fields='id').execute()
+        recordings_folder_id = recordings_folder['id']
+        
     for recording in recordings:
         topic = recording['topic']
         folder_name = topic.replace(' ', '_').replace('/', '_')  # Replace spaces and '/' in the topic name
         folder_name = urllib.parse.quote(folder_name)  # Encode special characters in the folder name
         folder_id = None
         
-        # Check if the folder already exists
+        # Check if the folder already exists within "Automated Zoom Recordings"
         results = drive_service.files().list(
-            q=f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'",
+            q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
             fields='files(id)',
             spaces='drive'
         ).execute()
@@ -63,10 +81,11 @@ def uploadFiles(drive_service):
         if len(results['files']) > 0:
             folder_id = results['files'][0]['id']
         else:
-            # Create the folder if it doesn't exist
+            # Create the folder within "Automated Zoom Recordings" if it doesn't exist
             file_metadata = {
                 'name': folder_name,
-                'mimeType': 'application/vnd.google-apps.folder'
+                'mimeType': 'application/vnd.google-apps.folder',
+                'parents': [recordings_folder_id]
             }
             folder = drive_service.files().create(body=file_metadata, fields='id').execute()
             folder_id = folder['id']
@@ -109,7 +128,6 @@ def uploadFiles(drive_service):
                     fields='id'
                 ).execute()
                 
-    
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
