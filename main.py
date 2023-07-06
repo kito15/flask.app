@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint, session, request, jsonify
 from upload_to_drive import upload_blueprint, store_parameters, retrieve_parameters
 from zoom_authorize import zoom_blueprint
-from your_app_name.celery import test_task
+from task import app, test_task
 
 # Create Flask app
 app = Flask(__name__)
