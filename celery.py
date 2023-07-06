@@ -7,7 +7,7 @@ app.conf.update(
     result_serializer='json',
     accept_content=['json'],
     task_routes={
-        'your_app_name.tasks.upload_task': {'queue': 'video_queue'}
+        'your_app_name.tasks.test_task': {'queue': 'video_queue'}
     },
     worker_prefetch_multiplier=1
 )
