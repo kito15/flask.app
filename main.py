@@ -23,7 +23,7 @@ def test():
             results=store_parameters(accountName,email)
             print(retrieve_parameters())
             
-            sharelink=upload_blueprint.after_request(call_retrieve_share_link)
+            sharelink=upload_blueprint.after_request(retrieve_share_link)
             print(sharelink)
             
             return jsonify(data)
