@@ -135,7 +135,7 @@ def uploadFiles(drive_service):
                 
                 params=retrieve_parameters()
                 accountName=params[0]
-                accountName=params[1]
+                email=params[1]
                 
                 if accountName in topics:
                     share_folder_with_email(drive_service, folder_id, email)
