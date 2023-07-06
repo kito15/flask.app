@@ -1,4 +1,4 @@
-from celery import Celery
+from celery import Celery, shared_task
 import os
 
 app = Celery('your_app_name', broker=os.getenv('REDIS_URL'), backend=os.getenv('REDIS_URL'))
