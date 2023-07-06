@@ -1,6 +1,7 @@
 from flask import Flask, Blueprint, session, request, jsonify
 from upload_to_drive import upload_blueprint, store_parameters, retrieve_parameters
 from zoom_authorize import zoom_blueprint
+from celery import test_task
 
 # Create Flask app
 app = Flask(__name__)
@@ -24,6 +25,9 @@ def test():
             print(retrieve_parameters())
 
             print(request.args.get('share_url'))
+
+            result = test_task.delay()
+            print(result.get())
             
             return jsonify(data)
         except Exception as e:
