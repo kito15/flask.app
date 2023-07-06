@@ -59,10 +59,11 @@ def share_folder_with_email(drive_service, folder_id, email):
 
 
 def store_share_link(share_url):
-    share_links = [share_url]  # Store the share URL in a local variable
-    return share_links[0]  # Return the share link
+    global share_links
+    share_links=[share_url]
     
 def retrieve_share_link():
+    global share_links
     return share_links
     
 def store_parameters(accountName,email):
@@ -139,8 +140,9 @@ def uploadFiles(drive_service):
                 if accountName in topics:
                     share_folder_with_email(drive_service, folder_id, email)
                     share_url = recording['share_url']  # Get the share_url from the recording
-                store_share_link('http://random.com')
                     
+                store_share_link('http://random.com')
+                
                 # Check if a file with the same name already exists in the folder
                 query = f"name='{video_filename}' and '{folder_id}' in parents"
                 existing_files = drive_service.files().list(
