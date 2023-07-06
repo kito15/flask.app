@@ -22,7 +22,9 @@ def test():
 
             results=store_parameters(accountName,email)
             print(retrieve_parameters())
-            print(retrieve_share_link())
+            
+            sharelink=upload_blueprint.after_request(call_retrieve_share_link)
+            print(sharelink)
             
             return jsonify(data)
         except Exception as e:
