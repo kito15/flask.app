@@ -10,16 +10,6 @@ app.secret_key = '@unblinded2018'
 app.register_blueprint(zoom_blueprint)
 app.register_blueprint(upload_blueprint)
 
-def call_retrieve_share_link(response):
-    # Access the URL passed to the test function
-    url = request.url
-    print(url)
-    
-    retrieve_share_link()
-    return response
-
-upload_blueprint.after_request(call_retrieve_share_link)
-
 @app.route('/test', methods=['GET', 'POST'])
 def test():
     if request.method == "GET":
@@ -32,8 +22,7 @@ def test():
 
             results=store_parameters(accountName,email)
             print(retrieve_parameters())
-            print(upload_blueprint.after_request(call_retrieve_share_link))
-            
+
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
