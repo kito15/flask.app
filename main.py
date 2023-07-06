@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, session, request, jsonify
-from upload_to_drive import upload_blueprint, store_parameters,retrieve_parameters,uploadFiles
+from upload_to_drive import upload_blueprint, store_parameters, retrieve_parameters
 from zoom_authorize import zoom_blueprint
 
 # Create Flask app
@@ -21,10 +21,8 @@ def test():
             email=data.get('email')
 
             results=store_parameters(accountName,email)
-            share_url = uploadFiles(drive_service)  # Get the share_url from uploadFiles function
-            if share_url:
-                return jsonify({"share_url": share_url})
-            else:
-                return jsonify({"error": "Share URL not found"})
+            print(retrieve_parameters())
+            
+            return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
