@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
+from shared_variables import share_links
 import urllib.parse
 
 # Set up Flask app
@@ -59,11 +60,9 @@ def share_folder_with_email(drive_service, folder_id, email):
 
 
 def store_share_link(share_url):
-    global share_links
-    share_links=[share_url]
-    
+    share_links.append(share_url)
+
 def retrieve_share_link():
-    global share_links
     return share_links
     
 def store_parameters(accountName,email):
@@ -74,6 +73,8 @@ def retrieve_parameters():
     global stored_params
     return stored_params
     
+store_share_link('http://random.com')
+
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
@@ -140,8 +141,7 @@ def uploadFiles(drive_service):
                 if accountName in topics:
                     share_folder_with_email(drive_service, folder_id, email)
                     share_url = recording['share_url']  # Get the share_url from the recording
-                    
-                store_share_link('http://random.com')
+
                 
                 # Check if a file with the same name already exists in the folder
                 query = f"name='{video_filename}' and '{folder_id}' in parents"
