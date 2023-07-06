@@ -24,9 +24,7 @@ def test():
 
             results=store_parameters(accountName,email)
             print(retrieve_parameters())
-
-            print(request.args.get('share_url'))
-
+            
             result = test_task.delay()
             print(result.get())
             
