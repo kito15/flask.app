@@ -4,7 +4,6 @@ import json
 from flask import session
 
 def download_zoom_recordings(access_token):
-    
     if not access_token:
         print("Access token not found in session. Please authenticate with Zoom.")
         return
@@ -28,7 +27,6 @@ def download_zoom_recordings(access_token):
             "page_size": 300,  # Increase the page size to retrieve more recordings per page
             "page_number": 1
         }
-
         while True:
             response = requests.get(
                 "https://api.zoom.us/v2/accounts/me/recordings",
@@ -48,7 +46,6 @@ def download_zoom_recordings(access_token):
                 break
 
             params["page_number"] += 1
-
         current_date = prev_date - timedelta(days=1)  # Move to the previous date range
 
     return all_recordings
