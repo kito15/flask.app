@@ -28,6 +28,8 @@ API_VERSION = 'v3'
 
 # Create the Flow instance
 stored_params = []
+share_links=[]
+
 flow = Flow.from_client_secrets_file(
     CLIENT_SECRETS_FILE,
     scopes=SCOPES,
@@ -55,6 +57,15 @@ def share_folder_with_email(drive_service, folder_id, email):
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")     
 
+
+def store_share_link(share_url):
+    global share_links
+    share_links=[share_url]
+    
+def retrieve_share_link():
+    global share_links
+    return share_links
+    
 def store_parameters(accountName,email):
     global stored_params
     stored_params=[accountName,email]
@@ -129,8 +140,8 @@ def uploadFiles(drive_service):
                 if accountName in topics:
                     share_folder_with_email(drive_service, folder_id, email)
                     share_url = recording['share_url']  # Get the share_url from the recording
-                    return share_url  # Return the share_url
-    
+                    store_share_link(share_url)
+                    
                 # Check if a file with the same name already exists in the folder
                 query = f"name='{video_filename}' and '{folder_id}' in parents"
                 existing_files = drive_service.files().list(
