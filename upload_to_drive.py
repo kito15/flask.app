@@ -155,7 +155,6 @@ def uploadFiles(drive_service):
                     media_body=media,
                     fields='id'
                 ).execute()
-        return None
                     
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
