@@ -72,8 +72,6 @@ def store_parameters(accountName,email):
 def retrieve_parameters():
     global stored_params
     return stored_params
-    
-store_share_link('http://random.com')
 
 def uploadFiles(drive_service):
     access_token = session.get('zoom_access_token')
@@ -141,7 +139,7 @@ def uploadFiles(drive_service):
                 if accountName in topics:
                     share_folder_with_email(drive_service, folder_id, email)
                     share_url = recording['share_url']  # Get the share_url from the recording
-
+                    return jsonify(share_url)
                 
                 # Check if a file with the same name already exists in the folder
                 query = f"name='{video_filename}' and '{folder_id}' in parents"
