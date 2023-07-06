@@ -8,7 +8,6 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
-from shared_variables import share_links
 import urllib.parse
 
 # Set up Flask app
@@ -57,13 +56,6 @@ def share_folder_with_email(drive_service, folder_id, email):
         print(f"Folder shared with email: {email}")
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")     
-
-
-def store_share_link(share_url):
-    share_links.append(share_url)
-
-def retrieve_share_link():
-    return share_links
     
 def store_parameters(accountName,email):
     global stored_params
