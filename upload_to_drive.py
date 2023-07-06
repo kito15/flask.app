@@ -59,11 +59,10 @@ def share_folder_with_email(drive_service, folder_id, email):
 
 
 def store_share_link(share_url):
-    global share_links
-    share_links=[share_url]
+    share_links = [share_url]  # Store the share URL in a local variable
+    return share_links[0]  # Return the share link
     
 def retrieve_share_link():
-    global share_links
     return share_links
     
 def store_parameters(accountName,email):
