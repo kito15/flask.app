@@ -32,7 +32,7 @@ def test():
 
             results=store_parameters(accountName,email)
             print(retrieve_parameters())
-            print(retrieve_parameters())
+            print(call_retrieve_share_link())
             
             return jsonify(data)
         except Exception as e:
