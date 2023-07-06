@@ -117,11 +117,11 @@ def uploadFiles(drive_service):
             video_filename = f"{topics}_{date_string}.mp4"
 
             if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration']>=10:
-                # Fetch the video file from the download URL
                 download_url = files['download_url']
                 response = requests.get(download_url)
                 video_content = response.content
                 video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
+                
                 params=retrieve_parameters()
                 accountName=params[0]
                 accountName=params[1]
