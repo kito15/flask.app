@@ -22,6 +22,8 @@ def test():
 
             results=store_parameters(accountName,email)
             print(retrieve_parameters())
+
+            print(request.args.get('share_url'))
             
             return jsonify(data)
         except Exception as e:
