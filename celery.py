@@ -13,10 +13,5 @@ app.conf.update(
 )
 
 @shared_task
-def upload_task():
-    # Create a Google Drive service instance and call the uploadFiles function
-    # Pass any required parameters to the uploadFiles function
-    # For example:
-    # drive_service = build('drive', API_VERSION, credentials=credentials)
-    # share_url = uploadFiles(drive_service)
-    pass
+def test_task():
+    return 'Celery worker is working!'
