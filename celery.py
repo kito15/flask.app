@@ -11,3 +11,12 @@ app.conf.update(
     },
     worker_prefetch_multiplier=1
 )
+
+@shared_task
+def upload_task():
+    # Create a Google Drive service instance and call the uploadFiles function
+    # Pass any required parameters to the uploadFiles function
+    # For example:
+    # drive_service = build('drive', API_VERSION, credentials=credentials)
+    # share_url = uploadFiles(drive_service)
+    pass
