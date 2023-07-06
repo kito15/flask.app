@@ -27,6 +27,7 @@ SCOPES = [
 API_VERSION = 'v3'
 
 # Create the Flow instance
+stored_params = []
 flow = Flow.from_client_secrets_file(
     CLIENT_SECRETS_FILE,
     scopes=SCOPES,
@@ -53,8 +54,6 @@ def share_folder_with_email(drive_service, folder_id, email):
         print(f"Folder shared with email: {email}")
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")     
-        
-stored_params = []
 
 def store_parameters(accountName,email):
     global stored_params
