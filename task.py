@@ -1,17 +1,14 @@
-from celery import Celery, shared_task
+from celery import Celery
 import os
 
-app = Celery('your_app_name', broker=os.getenv('REDIS_URL'), backend=os.getenv('REDIS_URL'))
-app.conf.update(
-    task_serializer='json',
-    result_serializer='json',
-    accept_content=['json'],
-    task_routes={
-        'your_app_name.tasks.test_task': {'queue': 'video_queue'}
-    },
-    worker_prefetch_multiplier=1
+# Configure Celery
+celery = Celery('celery_test', broker=os.getenv('REDIS_URL'), backend=os.getenv('REDIS_URL'))
+celery.conf.update(
+    broker_user=os.getenv('REDISUSER'),
+    broker_password=os.getenv('REDISPASSWORD')
 )
 
-@shared_task
+# Define a test task
+@celery.task
 def test_task():
-    return 'Celery worker is working!'
+    return 'Celery test task executed successfully!'
