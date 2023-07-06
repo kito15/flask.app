@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint, session, request, jsonify
 from upload_to_drive import upload_blueprint, store_parameters, retrieve_parameters
 from zoom_authorize import zoom_blueprint
-from task import app, test_task
+from your_app_name import test_task
 
 # Create Flask app
 app = Flask(__name__)
