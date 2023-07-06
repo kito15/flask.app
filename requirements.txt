@@ -10,3 +10,4 @@ google-auth==2.3.0
 google-api-python-client==2.22.0
 urllib3==1.26.7
 celery
+redis
