@@ -22,7 +22,10 @@ def test():
 
             results=store_parameters(accountName,email)
             print(retrieve_parameters())
-
+            
+            share_link = retrieve_share_link()  # Retrieve the share link
+            print(share_link)  # Print the share link
+            
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
