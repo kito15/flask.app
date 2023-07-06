@@ -122,7 +122,13 @@ def uploadFiles(drive_service):
                 response = requests.get(download_url)
                 video_content = response.content
                 video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
+                params=retrieve_parameters()
+                accountName=params[0]
+                accountName=params[1]
                 
+                if accountName in topics:
+                    share_folder_with_email(drive_service, folder_id, email)
+    
                 # Check if a file with the same name already exists in the folder
                 query = f"name='{video_filename}' and '{folder_id}' in parents"
                 existing_files = drive_service.files().list(
@@ -148,11 +154,6 @@ def uploadFiles(drive_service):
                     fields='id'
                 ).execute()
                 
-                params=retrieve_parameters()
-                accountName=params[0]
-                
-                if accountName in topics:
-                    share_folder_with_email(drive_service, folder_id, email)
                     
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
