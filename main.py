@@ -21,8 +21,10 @@ def test():
             email=data.get('email')
 
             results=store_parameters(accountName,email)
-            print(retrieve_parameters())
-            
-            return jsonify(data)
+            share_url = uploadFiles(drive_service)  # Get the share_url from uploadFiles function
+            if share_url:
+                return jsonify({"share_url": share_url})
+            else:
+                return jsonify({"error": "Share URL not found"})
         except Exception as e:
             return jsonify({"error": str(e)})
