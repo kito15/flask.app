@@ -11,6 +11,9 @@ app.secret_key = '@unblinded2018'
 app.register_blueprint(upload_blueprint)
 app.register_blueprint(zoom_blueprint)
 
+result = test_task.delay()
+print(result.get())
+
 @app.route('/test', methods=['GET', 'POST'])
 def test():
     if request.method == "GET":
@@ -23,10 +26,6 @@ def test():
 
             results=store_parameters(accountName,email)
             print(retrieve_parameters())
-
-            # Run the test task
-            result = test_task.delay()
-            print(result.get())
             
             return jsonify(data)
         except Exception as e:
