@@ -1,7 +1,6 @@
 from flask import Flask, Blueprint, session, request, jsonify
 from upload_to_drive import upload_blueprint, store_parameters, retrieve_parameters
 from zoom_authorize import zoom_blueprint
-from celery import app
 from task import test_task
 
 # Create Flask app
