@@ -9,24 +9,17 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
+
 # Create a Celery instance
 celery = Celery('task',broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
-def drive_service_deserializer(obj):
-    if 'class' in obj and 'serialized' in obj:
-        # Deserialize the drive_service object from JSON
-        class_name = obj['class']
-        serialized = obj['serialized']
-        if class_name == 'Resource':
-            # Import the necessary class for deserialization
-            from googleapiclient.discovery import Resource
-            return Resource(**serialized)
-    return obj
 
 @celery.task
-def uploadFiles(drive_service_json,recordings,accountName,email):
+def uploadFiles(credentials,recordings,accountName,email):
     
+    API_VERSION = 'v3'
+    drive_service = build('drive', API_VERSION, credentials=credentials)
+     
     # Check if the "Automated Zoom Recordings" folder already exists
-    drive_service = json.loads(drive_service_json, object_hook=drive_service_deserializer)
     results = drive_service.files().list(
         q="name='Automated Zoom Recordings' and mimeType='application/vnd.google-apps.folder'",
         fields='files(id)',
