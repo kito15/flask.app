@@ -80,7 +80,9 @@ def upload_callback():
     params=retrieve_parameters()
     accountName=params[0]
     email=params[1]
+
+    credentials_dict = credentials.to_json()  # Convert credentials to a JSON-serializable dictionary
     
-    uploadFiles.delay(credentials,recordings,accountName,email)
+    uploadFiles.delay(credentials_dict,recordings,accountName,email)
     
     return "Recording are being uploaded"
