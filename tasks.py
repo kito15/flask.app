@@ -97,14 +97,15 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                         video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
 
-                        if accountName in topics:
-                            if accountName not in account_share_links:
-                                share_link = share_folder_with_email(drive_service, folder_id, email)
-                                if share_link:
-                                    account_share_links[accountName] = share_link
-                                else:
-                                    # Account already exists in the dictionary
-                                    existing_share_link = account_share_links[accountName]
+                        if accountName and email is not None :
+                            if accountName in topics:
+                                if accountName not in account_share_links:
+                                    share_link = share_folder_with_email(drive_service, folder_id, email)
+                                    if share_link:
+                                        account_share_links[accountName] = share_link
+                                    else:
+                                        # Account already exists in the dictionary
+                                        existing_share_link = account_share_links[accountName]
 
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
