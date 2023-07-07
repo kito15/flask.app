@@ -14,7 +14,7 @@ shedule_url='https://flask-production-d5a3.up.railway.app/'
 
 def start_upload_process():
     # Send a request to initiate the upload
-    response = requests.get(schedule_url)
+    response = request.get(schedule_url)
     print(response.text)
 
 @app.route('/test', methods=['GET', 'POST'])
