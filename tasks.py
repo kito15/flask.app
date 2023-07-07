@@ -14,8 +14,9 @@ from googleapiclient.http import MediaIoBaseUpload
 celery = Celery('task',broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
 
 @celery.task
-def uploadFiles(credentials,recordings,accountName,email):
+def uploadFiles(credentials_dict,recordings,accountName,email):
     
+    credentials = google.oauth2.credentials.Credentials.from_json(credentials_dict)
     API_VERSION = 'v3'
     drive_service = build('drive', API_VERSION, credentials=credentials)
      
