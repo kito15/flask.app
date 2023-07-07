@@ -10,7 +10,7 @@ def download_zoom_recordings(access_token):
     headers = {"Authorization": "Bearer " + access_token}
     
     end_date = datetime.now()
-    start_date = datetime(2023, 7, 3)
+    start_date = datetime(2023, 7, 6)
     all_recordings = []
     current_date = end_date
 
