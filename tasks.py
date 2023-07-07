@@ -17,8 +17,7 @@ celery = Celery('task',broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-u
 @celery.task
 def uploadFiles(credentials_dict,recordings,accountName,email):
     
-    credentials_info = json.loads(credentials_dict)
-    credentials = google_credentials.Credentials.from_authorized_user_info(credentials_info)
+    credentials = google_credentials.Credentials.from_authorized_user_info(credentials_dict)
     API_VERSION = 'v3'
     drive_service = build('drive', API_VERSION, credentials=credentials)
      
