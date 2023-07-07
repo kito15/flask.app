@@ -7,8 +7,8 @@ app = Flask(__name__)
 app.secret_key = '@unblinded2018'
 
 # Register blueprints
-app.register_blueprint(upload_blueprint)
 app.register_blueprint(zoom_blueprint)
+app.register_blueprint(upload_blueprint)
 
 @app.route('/test', methods=['GET', 'POST'])
 def test():
@@ -20,9 +20,9 @@ def test():
             accountName = data.get('accountName')
             email=data.get('email')
 
-            results=store_parameters(accountName,email)
+            store_parameters(accountName,email)
             print(retrieve_parameters())
-            
+
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
