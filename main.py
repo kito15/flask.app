@@ -18,8 +18,6 @@ def start_upload_process():
     response = requests.get(schedule_url)
     print(response)
     
-start_upload_process()
-
 @app.route('/test', methods=['GET', 'POST'])
 def test():
     if request.method == "GET":
@@ -32,9 +30,12 @@ def test():
 
             store_parameters(accountName,email)
             params=retrieve_parameters()
+
+            start_upload_process()
             
             email=params[0]
             print(email)
+            
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
