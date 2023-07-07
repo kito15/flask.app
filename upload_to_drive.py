@@ -65,7 +65,8 @@ def retrieve_parameters():
     return stored_params
     
 def drive_service_serializer(obj):
-    if isinstance(obj, build):
+    from googleapiclient.discovery import Resource
+    if isinstance(obj, Resource):
         # Serialize the drive_service object to JSON
         serialized = obj._serialize()
         return {
@@ -73,7 +74,6 @@ def drive_service_serializer(obj):
             'class': obj.__class__.__name__,
         }
     return obj
-
 
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
