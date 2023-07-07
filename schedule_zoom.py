@@ -1,9 +1,9 @@
 import requests
 import schedule
 import time
-import logging
+from flask import Flask
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+app = Flask(__name__)
 
 def run_job():
     url = "https://flask-production-d5a3.up.railway.app/authorize"
@@ -16,7 +16,11 @@ def run_job():
 # Schedule the job to run every hour
 schedule.every().hour.do(run_job)
 
-# Run the scheduler indefinitely
+@app.route('/trigger', methods=['POST'])
+def trigger_job():
+    run_job()
+    return 'Job triggered'
+
 while True:
     schedule.run_pending()
     time.sleep(1)
