@@ -82,6 +82,6 @@ def upload_callback():
     accountName=params[0]
     email=params[1]
     
-    uploadFiles(drive_service,recordings,accountName,email)
+    uploadFiles.delay(drive_service,recordings,accountName,email)
     
     return "Recording are being uploaded"
