@@ -8,6 +8,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
 from tasks import uploadFiles
+import pickle
 import urllib.parse
 import json
 
@@ -82,6 +83,8 @@ def upload_callback():
     accountName=params[0]
     email=params[1]
     
-    uploadFiles.delay(credentials,recordings,accountName,email)
+    serialized_credentials = pickle.dumps(credentials)
+    
+    uploadFiles.delay(serialized_credentials,recordings,accountName,email)
     
     return "Recording are being uploaded"
