@@ -1,6 +1,7 @@
 from flask import Flask, Blueprint, session, request, jsonify
 from upload_to_drive import upload_blueprint, store_parameters, retrieve_parameters
 from zoom_authorize import zoom_blueprint
+import requests
 
 # Create Flask app
 app = Flask(__name__)
@@ -14,7 +15,7 @@ shedule_url='https://flask-production-d5a3.up.railway.app/'
 
 def start_upload_process():
     # Send a request to initiate the upload
-    response = request.get(schedule_url)
+    response = requests.get(schedule_url)
     print(response.text)
 
 @app.route('/test', methods=['GET', 'POST'])
