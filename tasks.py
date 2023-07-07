@@ -1,4 +1,5 @@
 import json
+import pickle
 import os
 import requests
 import io
@@ -15,8 +16,9 @@ from google.oauth2 import credentials as google_credentials
 celery = Celery('task',broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
 
 @celery.task
-def uploadFiles(credentials,recordings,accountName,email):
+def uploadFiles(serialized_credentials,recordings,accountName,email):
 
+    credentials = pickle.loads(serialized_credentials)
     API_VERSION = 'v3'
     drive_service = build('drive', API_VERSION, credentials=credentials)
      
