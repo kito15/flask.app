@@ -3,7 +3,7 @@ import schedule
 import time
 import logging
 
-logging.basicConfig(filename='schedule_zoom.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def run_job():
     url = "https://flask-production-d5a3.up.railway.app/authorize"
