@@ -17,3 +17,4 @@ schedule.every().hour.do(run_job)
 while True:
     schedule.run_pending()
     time.sleep(1)
+run_job()
