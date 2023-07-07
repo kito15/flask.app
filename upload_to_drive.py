@@ -9,7 +9,6 @@ from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
 from tasks import uploadFiles
 import urllib.parse
-import json
 
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
@@ -74,7 +73,6 @@ def upload_callback():
 
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
-    drive_service = build('drive', API_VERSION, credentials=credentials)
 
     access_token = session.get('zoom_access_token')
     recordings = download_zoom_recordings(access_token)
