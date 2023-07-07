@@ -43,19 +43,7 @@ def index():
         access_type='offline',
         include_granted_scopes='true'
     )
-    return redirect(authorization_url)
-    
-def share_folder_with_email(drive_service, folder_id, email):
-    permission = {
-        'type': 'user',
-        'role': 'writer',
-        'emailAddress': email
-    }
-    try:
-        drive_service.permissions().create(fileId=folder_id, body=permission).execute()
-        print(f"Folder shared with email: {email}")
-    except errors.HttpError as e:
-        print(f"Error sharing folder with email: {email}. Error: {str(e)}")     
+    return redirect(authorization_url) 
     
 def store_parameters(accountName,email):
     global stored_params
