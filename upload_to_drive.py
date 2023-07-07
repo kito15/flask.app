@@ -9,6 +9,7 @@ from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
 from tasks import uploadFiles
 import urllib.parse
+import json
 
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
@@ -62,7 +63,18 @@ def store_parameters(accountName,email):
 def retrieve_parameters():
     global stored_params
     return stored_params
-                    
+    
+def drive_service_serializer(obj):
+    if isinstance(obj, build):
+        # Serialize the drive_service object to JSON
+        serialized = obj._serialize()
+        return {
+            'serialized': serialized,
+            'class': obj.__class__.__name__,
+        }
+    return obj
+
+
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
@@ -81,7 +93,10 @@ def upload_callback():
     params=retrieve_parameters()
     accountName=params[0]
     email=params[1]
+
+    # Serialize the drive_service object to JSON
+    drive_service_json = json.dumps(drive_service, default=drive_service_serializer)
     
-    uploadFiles.delay(drive_service,recordings,accountName,email)
+    uploadFiles.delay(drive_service_json,recordings,accountName,email)
     
     return "Recording are being uploaded"
