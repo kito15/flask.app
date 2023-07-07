@@ -12,6 +12,7 @@ from googleapiclient.http import MediaIoBaseUpload
 # Create a Celery instance
 celery = Celery('task',broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
 
+
 @celery.task
 def uploadFiles(drive_service,recordings,accountName,email):
     # Check if the "Automated Zoom Recordings" folder already exists
