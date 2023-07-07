@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 import io
@@ -8,9 +9,7 @@ import urllib.parse
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-from google.oauth2 import credentials
-import json
-
+from google.oauth2 import credentials as google_credentials
 
 # Create a Celery instance
 celery = Celery('task',broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
@@ -19,7 +18,7 @@ celery = Celery('task',broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-u
 def uploadFiles(credentials_dict,recordings,accountName,email):
     
     credentials_info = json.loads(credentials_dict)
-    credentials = credentials.Credentials.from_authorized_user_info(credentials_info)
+    credentials = google_credentials.Credentials.from_authorized_user_info(credentials_info)
     API_VERSION = 'v3'
     drive_service = build('drive', API_VERSION, credentials=credentials)
      
