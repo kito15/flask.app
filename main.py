@@ -34,8 +34,6 @@ def test():
             email=params[0]
             print(email)
 
-            start_upload_process()
-
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
