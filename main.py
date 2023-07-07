@@ -11,11 +11,14 @@ app.secret_key = '@unblinded2018'
 app.register_blueprint(zoom_blueprint)
 app.register_blueprint(upload_blueprint)
 
-schedule_url='https://flask-production-d5a3.up.railway.app/'
+schedule_url='https://flask-production-d5a3.up.railway.app/authorize'
 
 def start_upload_process():
     # Send a request to initiate the upload
     response = requests.get(schedule_url)
+    print(response)
+    
+start_upload_process()
 
 @app.route('/test', methods=['GET', 'POST'])
 def test():
@@ -32,9 +35,6 @@ def test():
             
             email=params[0]
             print(email)
-
-            start_upload_process()
-
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
