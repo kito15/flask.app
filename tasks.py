@@ -13,7 +13,6 @@ from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
 from requests.exceptions import ConnectionError, ChunkedEncodingError
 
-
 def share_folder_with_email(drive_service, folder_id, email):
     permission = {
         'type': 'user',
