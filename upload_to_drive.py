@@ -81,8 +81,15 @@ def upload_callback():
     params=retrieve_parameters()
     accountName=params[0]
     email=params[1]
-
-    credentials_dict = credentials.to_json(include_refresh_token=True)  # Convert credentials to a JSON-serializable dictionary
+    
+    credentials_dict = {
+    'client_id': credentials.client_id,
+    'client_secret': credentials.client_secret,
+    'refresh_token': credentials.refresh_token,
+    'token': credentials.token,
+    'token_uri': credentials.token_uri,
+    'scopes': credentials.scopes,
+    }
     
     uploadFiles.delay(credentials_dict,recordings,accountName,email)
     
