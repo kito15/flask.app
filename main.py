@@ -16,7 +16,6 @@ schedule_url='https://flask-production-d5a3.up.railway.app/'
 def start_upload_process():
     # Send a request to initiate the upload
     response = requests.get(schedule_url)
-    print(response.text)
 
 @app.route('/test', methods=['GET', 'POST'])
 def test():
@@ -33,6 +32,8 @@ def test():
             
             email=params[0]
             print(email)
+
+            start_upload_process()
 
             return jsonify(data)
         except Exception as e:
