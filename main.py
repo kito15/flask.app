@@ -21,7 +21,13 @@ def test():
             email=data.get('email')
 
             store_parameters(accountName,email)
-            print(retrieve_parameters())
+            params=retrieve_parameters()
+            
+            email=params[0]
+            accountName=params[1]
+
+            print(email)
+            print(accountName)
 
             return jsonify(data)
         except Exception as e:
