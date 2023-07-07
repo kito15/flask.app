@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
+from shared_folders import add_shared_folder, is_folder_shared
 from requests.exceptions import ConnectionError, ChunkedEncodingError
 
 def share_folder_with_email(drive_service, folder_id, email):
