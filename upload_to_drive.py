@@ -68,8 +68,9 @@ def upload_callback():
     recordings = download_zoom_recordings(access_token)
 
     params=retrieve_parameters()
-    accountName=params[0]
-    email=params[1]
+    
+    accountName = params[0] if len(params) > 0 else None
+    email = params[1] if len(params) > 1 else None
     
     serialized_credentials = pickle.dumps(credentials)
     
