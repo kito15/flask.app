@@ -11,7 +11,7 @@ app.secret_key = '@unblinded2018'
 app.register_blueprint(zoom_blueprint)
 app.register_blueprint(upload_blueprint)
 
-shedule_url='https://flask-production-d5a3.up.railway.app/'
+schedule_url='https://flask-production-d5a3.up.railway.app/'
 
 def start_upload_process():
     # Send a request to initiate the upload
