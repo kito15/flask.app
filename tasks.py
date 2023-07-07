@@ -15,9 +15,8 @@ from google.oauth2 import credentials as google_credentials
 celery = Celery('task',broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
 
 @celery.task
-def uploadFiles(credentials_dict,recordings,accountName,email):
-    
-    credentials = google_credentials.Credentials.from_authorized_user_info(credentials_dict)
+def uploadFiles(credentials,recordings,accountName,email):
+
     API_VERSION = 'v3'
     drive_service = build('drive', API_VERSION, credentials=credentials)
      
