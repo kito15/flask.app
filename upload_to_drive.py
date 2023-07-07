@@ -9,7 +9,6 @@ from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
 import urllib.parse
 
-# Set up Flask app
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
 
