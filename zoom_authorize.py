@@ -4,7 +4,6 @@ import requests
 import base64
 import time
 import redis
-import json
 
 # Zoom OAuth Configuration
 zoom_blueprint = Blueprint('zoom', __name__)
@@ -40,6 +39,7 @@ def refresh_access_token(refresh_token):
     access_token = token_data['access_token']
     new_refresh_token = token_data['refresh_token']
     token_expires_at = time.time() + token_data['expires_in']
+    
     return access_token, new_refresh_token, token_expires_at
 
 @zoom_blueprint.route('/authorize')
