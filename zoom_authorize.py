@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, redirect, session, Blueprint
+from flask import Flask, request, redirect, Blueprint
 import requests
 import base64
 import time
@@ -7,15 +7,14 @@ import redis
 
 zoom_blueprint = Blueprint('zoom', __name__)
 zoom_blueprint.secret_key = '@unblinded2018'
-
 # Zoom OAuth Configuration
 client_id = 'N_IGn4DWQfuuklf8NDQA'
 client_secret = '5IhTwYBVhqmpDKhIF1PUzEqHd9OMtiHD'
 redirect_uri = 'https://flask-production-d5a3.up.railway.app/authorize'
-redis_url = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
 
-# Connect to Redis
-redis_client = redis.Redis.from_url(redis_url)
+# Establish Redis connection
+redis_url = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
+redis_conn = redis.from_url(redis_url)
 
 # Function to refresh the access token
 def refresh_access_token(refresh_token):
@@ -37,11 +36,6 @@ def refresh_access_token(refresh_token):
 
     # Refreshed access token retrieved
     access_token = token_data['access_token']
-    new_refresh_token = token_data['refresh_token']
-    
-    # Store the new refresh token in Redis
-    redis_client.set('zoom_refresh_token', new_refresh_token)
-    
     return access_token
 
 @zoom_blueprint.route('/authorize')
@@ -67,8 +61,10 @@ def authorize():
     # Check if the access token has expired
     if time.time() >= token_expires_at:
         access_token = refresh_access_token(refresh_token)
-
-    # Store the access token in Redis
-    redis_client.set('zoom_access_token', access_token)
-
+        # Update the refreshed access token for further API requests
+        redis_conn.set('zoom_access_token', access_token)
+        redis_conn.expire('zoom_access_token', token_data['expires_in'])
+    else:
+        redis_conn.set('zoom_access_token', access_token)
+    
     return "Success"
