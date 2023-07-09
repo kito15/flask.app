@@ -5,9 +5,9 @@ import base64
 import time
 import redis
 
+# Zoom OAuth Configuration
 zoom_blueprint = Blueprint('zoom', __name__)
 zoom_blueprint.secret_key = '@unblinded2018'
-# Zoom OAuth Configuration
 
 client_id = 'N_IGn4DWQfuuklf8NDQA'
 client_secret = '5IhTwYBVhqmpDKhIF1PUzEqHd9OMtiHD'
@@ -80,5 +80,5 @@ def authorize():
     redis_conn.set('access_token', access_token)
     redis_conn.set('refresh_token', refresh_token)
     redis_conn.set('token_expires_at', token_expires_at)
-
+    
     return "Success"
