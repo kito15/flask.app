@@ -54,7 +54,6 @@ def retrieve_parameters():
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
     authorization_code = request.args.get('code')
-    # Exchange the authorization code for a token
     flow.fetch_token(authorization_response=request.url)
 
     # Create a Google Drive service instance using the credentials
