@@ -1,8 +1,13 @@
 import requests
 from datetime import datetime, timedelta
 import json
+import redis
 
-def download_zoom_recordings(access_token):
+redis_url = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
+redis_conn = redis.from_url(redis_url)
+
+def download_zoom_recordings():
+    access_token = redis_conn.get('access_token')
     if not access_token:
         print("Access token not found in session. Please authenticate with Zoom.")
         return
