@@ -1,22 +1,21 @@
-import requests
-import io
-import os
-import tempfile
-from flask import Flask, redirect, request, Blueprint, current_app, session
+from flask import Flask, redirect, request, Blueprint
 from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
 from download import download_zoom_recordings
 from tasks import uploadFiles
 import pickle
-import urllib.parse
-import json
+import redis
 
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
 
-# Google OAuth 2.0 configuration
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+stored_params = []
+
+# Establish Redis connection
+redis_url = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
+redis_conn = redis.from_url(redis_url)
+
+# Google OAuth 2.0 configuration
 CLIENT_SECRETS_FILE = 'client_secrets.json'
 SCOPES = [
     'https://www.googleapis.com/auth/drive.file',
@@ -25,11 +24,8 @@ SCOPES = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile'
 ]
-API_VERSION = 'v3'
 
 # Create the Flow instance
-stored_params = []
-
 flow = Flow.from_client_secrets_file(
     CLIENT_SECRETS_FILE,
     scopes=SCOPES,
@@ -57,14 +53,13 @@ def retrieve_parameters():
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
     authorization_code = request.args.get('code')
-
     # Exchange the authorization code for a token
     flow.fetch_token(authorization_response=request.url)
 
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
 
-    access_token = session.get('zoom_access_token')
+    access_token = redis_conn.get('access_token')
     recordings = download_zoom_recordings(access_token)
 
     params=retrieve_parameters()
