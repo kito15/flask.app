@@ -3,7 +3,6 @@ from google_auth_oauthlib.flow import Flow
 from download import download_zoom_recordings
 from tasks import uploadFiles
 import pickle
-import redis
 import os
 
 upload_blueprint = Blueprint('upload', __name__)
@@ -11,10 +10,6 @@ upload_blueprint.secret_key = '@unblinded2018'
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 stored_params = []
-
-# Establish Redis connection
-redis_url = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
-redis_conn = redis.from_url(redis_url)
 
 # Google OAuth 2.0 configuration
 CLIENT_SECRETS_FILE = 'client_secrets.json'
@@ -59,8 +54,7 @@ def upload_callback():
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
 
-    access_token = redis_conn.get('access_token')
-    recordings = download_zoom_recordings(access_token)
+    recordings = download_zoom_recordings()
 
     params=retrieve_parameters()
     
