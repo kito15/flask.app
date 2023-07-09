@@ -1,7 +1,6 @@
 import requests
 from datetime import datetime, timedelta
 import json
-from flask import session
 
 def download_zoom_recordings(access_token):
     if not access_token:
