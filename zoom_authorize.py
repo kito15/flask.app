@@ -8,6 +8,7 @@ import redis
 zoom_blueprint = Blueprint('zoom', __name__)
 zoom_blueprint.secret_key = '@unblinded2018'
 # Zoom OAuth Configuration
+
 client_id = 'N_IGn4DWQfuuklf8NDQA'
 client_secret = '5IhTwYBVhqmpDKhIF1PUzEqHd9OMtiHD'
 redirect_uri = 'https://flask-production-d5a3.up.railway.app/authorize'
@@ -36,22 +37,33 @@ def refresh_access_token(refresh_token):
 
     # Refreshed access token retrieved
     access_token = token_data['access_token']
-    return access_token
+    new_refresh_token = token_data['refresh_token']
+    token_expires_at = time.time() + token_data['expires_in']
+    return access_token, new_refresh_token, token_expires_at
 
 @zoom_blueprint.route('/authorize')
 def authorize():
-    # Check if access token exists in Redis
+    # Check if access token and refresh token exist in Redis
     access_token = redis_conn.get('access_token')
-    if access_token:
-        # Access token found, use it for further API requests
-        return "Success"
+    refresh_token = redis_conn.get('refresh_token')
+    token_expires_at = redis_conn.get('token_expires_at')
 
-    # Step 1: Redirect user to Zoom authorization page
+    if access_token and refresh_token and token_expires_at:
+        current_time = time.time()
+        if current_time < float(token_expires_at):
+            return "Success"
+        else:
+            # Access token has expired, refresh it
+            access_token, refresh_token, token_expires_at = refresh_access_token(refresh_token)
+            redis_conn.set('access_token', access_token)
+            redis_conn.set('refresh_token', refresh_token)
+            redis_conn.set('token_expires_at', token_expires_at)
+            return "Success"
+            
     if 'code' not in request.args:
         authorization_url = f"https://zoom.us/oauth/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}"
         return redirect(authorization_url)
 
-    # Step 2: Exchange authorization code for an access token
     authorization_code = request.args['code']
 
     token_endpoint = f"https://zoom.us/oauth/token?grant_type=authorization_code&code={authorization_code}&client_id={client_id}&client_secret={client_secret}&redirect_uri={redirect_uri}"
@@ -62,15 +74,11 @@ def authorize():
     # Access token retrieved
     access_token = token_data['access_token']
     refresh_token = token_data['refresh_token']
-    token_expires_at = time.time() + token_data['expires_in']  # Calculate the timestamp when the token will expire
+    token_expires_at = time.time() + token_data['expires_in']
 
-    # Check if the access token has expired
-    if time.time() >= token_expires_at:
-        access_token = refresh_access_token(refresh_token)
-        # Update the refreshed access token for further API requests
-        redis_conn.set('access_token', access_token)
-        redis_conn.expire('access_token', token_data['expires_in'])
-    else:
-        redis_conn.set('access_token', access_token)
+    # Store the access token, refresh token, and expiration time in Redis
+    redis_conn.set('access_token', access_token)
+    redis_conn.set('refresh_token', refresh_token)
+    redis_conn.set('token_expires_at', token_expires_at)
 
     return "Success"
