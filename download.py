@@ -11,7 +11,7 @@ def download_zoom_recordings():
     if not access_token:
         print("Access token not found in session. Please authenticate with Zoom.")
         return
-    headers = {"Authorization": "Bearer " + access_token}
+    headers = {"Authorization": "Bearer " + access_token.decode()}
     
     end_date = datetime.now()
     start_date = datetime(2023, 7, 6)
