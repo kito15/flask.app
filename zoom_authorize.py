@@ -66,5 +66,29 @@ def authorize():
         redis_conn.expire('zoom_access_token', token_data['expires_in'])
     else:
         redis_conn.set('zoom_access_token', access_token)
-    
+
+    # Store the access token in the Redis database
+    redis_conn.set('zoom_access_token', access_token)
+
     return "Success"
+
+# Function to retrieve the access token from Redis
+def get_access_token():
+    access_token = redis_conn.get('zoom_access_token')
+    return access_token.decode() if access_token else None
+
+# Function to make an API request using the access token
+def make_api_request(url):
+    access_token = get_access_token()
+    headers = {
+        'Authorization': f'Bearer {access_token}'
+    }
+    response = requests.get(url, headers=headers)
+    return response
+
+@zoom_blueprint.route('/api/request')
+def api_request():
+    # Example API request
+    api_url = 'https://api.zoom.us/v2/users/me'
+    response = make_api_request(api_url)
+    return response.json()
