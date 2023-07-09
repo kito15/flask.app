@@ -4,6 +4,7 @@ from download import download_zoom_recordings
 from tasks import uploadFiles
 import pickle
 import redis
+import os
 
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
