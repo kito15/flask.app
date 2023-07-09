@@ -41,10 +41,10 @@ def refresh_access_token(refresh_token):
 @zoom_blueprint.route('/authorize')
 def authorize():
     # Check if access token exists in Redis
-    access_token = redis_conn.get('zoom_access_token')
+    access_token = redis_conn.get('access_token')
     if access_token:
-        # Access token found, use it to authenticate the user
-        return "User is already logged in!"
+        # Access token found, use it for further API requests
+        return "Success"
 
     # Step 1: Redirect user to Zoom authorization page
     if 'code' not in request.args:
@@ -68,9 +68,9 @@ def authorize():
     if time.time() >= token_expires_at:
         access_token = refresh_access_token(refresh_token)
         # Update the refreshed access token for further API requests
-        redis_conn.set('zoom_access_token', access_token)
-        redis_conn.expire('zoom_access_token', token_data['expires_in'])
+        redis_conn.set('access_token', access_token)
+        redis_conn.expire('access_token', token_data['expires_in'])
     else:
-        redis_conn.set('zoom_access_token', access_token)
+        redis_conn.set('access_token', access_token)
 
     return "Success"
