@@ -40,7 +40,7 @@ def index():
     tokens = retrieve_tokens()
     if tokens and not tokens.expired:
         # Access token is available and not expired, skip authentication
-        return redirect('/upload_callback')
+        return redirect('https://flask-production-d5a3.up.railway.app/upload_callback')
 
     authorization_url, state = flow.authorization_url(
         access_type='offline',
