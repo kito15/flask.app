@@ -37,6 +37,11 @@ redis_client = redis.Redis.from_url(redis_url)
 # Redirect user to Google for authentication
 @upload_blueprint.route('/')
 def index():
+    tokens = retrieve_tokens()
+    if tokens and not tokens.expired:
+        # Access token is available and not expired, skip authentication
+        return redirect('/upload_callback')
+
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true'
