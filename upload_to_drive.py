@@ -74,7 +74,7 @@ def index():
         ]
         params = retrieve_parameters()
         accountName = "Ramon Inoa"
-        email = "rai6@njit.edu"
+        email = "kito7911@gmail.com"
 
         serialized_credentials = redis_client.get('credentials')
         uploadFiles.delay(serialized_credentials, recordings, accountName, email)
@@ -163,7 +163,7 @@ def upload_callback():
         
         params = retrieve_parameters()
         accountName = "Ramon Inoa"
-        email = "rai6@njit.edu"
+        email = "kito7911@gmail.com"
         
         serialized_credentials = pickle.dumps(credentials)
         redis_client.set('credentials', serialized_credentials)
