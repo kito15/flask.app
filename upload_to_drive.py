@@ -3,6 +3,7 @@ from google_auth_oauthlib.flow import Flow
 from download import download_zoom_recordings
 from tasks import uploadFiles
 import pickle
+from google.oauth2.credentials import Credentials
 import os
 import redis
 
@@ -73,21 +74,36 @@ def upload_callback():
     authorization_code = request.args.get('code')
     flow.fetch_token(authorization_response=request.url)
 
-    # Store the access token in Redis
-    access_token = flow.credentials.token
-    redis_client.set('google_access_token', access_token)
+    # Refresh the access token
+    credentials = flow.credentials
+    request_url = 'https://oauth2.googleapis.com/token'
+    refresh_token = credentials.refresh_token
+    token_params = {
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token,
+        'client_id': credentials.client_id,
+        'client_secret': credentials.client_secret
+    }
+    response = requests.post(request_url, data=token_params)
+    if response.status_code == 200:
+        new_credentials = Credentials.from_authorized_user_info(response.json())
+        new_access_token = new_credentials.token
+        # Store the new access token in Redis
+        redis_client.set('google_access_token', new_access_token)
+        # Update the existing credentials with the new credentials
+        credentials.token = new_access_token
+        serialized_credentials = pickle.dumps(credentials)
+        redis_client.set('credentials', serialized_credentials)
 
-    recordings = download_zoom_recordings()
+        recordings = download_zoom_recordings()
 
-    params = retrieve_parameters()
+        params = retrieve_parameters()
 
-    accountName = params[0] if len(params) > 0 else None
-    email = params[1] if len(params) > 1 else None
+        accountName = params[0] if len(params) > 0 else None
+        email = params[1] if len(params) > 1 else None
 
-    serialized_credentials = pickle.dumps(flow.credentials)
+        uploadFiles.delay(serialized_credentials, recordings, accountName, email)
 
-    redis_client.set('credentials', serialized_credentials)
-
-    uploadFiles.delay(serialized_credentials, recordings, accountName, email)
-
-    return "Recordings are being uploaded"
+        return "Recordings are being uploaded"
+    else:
+        return "Failed to refresh access token"
