@@ -34,14 +34,18 @@ flow = Flow.from_client_secrets_file(
 # Create a Redis client
 redis_client = redis.Redis.from_url(redis_url)
 
-# Redirect user to Google for authentication
 @upload_blueprint.route('/')
 def index():
+    tokens = retrieve_tokens()
+    if tokens and not tokens.expired:
+        # Access token is available and not expired, skip authentication
+        return redirect('/upload_callback?code=' + tokens.authorization_code)
+
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true'
     )
-    return redirect(authorization_url) 
+    return redirect(authorization_url)
 
 def store_tokens(tokens):
     # Store the tokens in Redis
