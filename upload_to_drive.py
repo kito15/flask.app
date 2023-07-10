@@ -23,23 +23,17 @@ SCOPES = [
 ]
 
 # Create the Flow instance
-flow = Flow.from_client_secrets_file(
-    CLIENT_SECRETS_FILE,
-    scopes=SCOPES,
-    redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
-)
-
-# Function to check if the access token is expired
-def is_token_expired(credentials):
-    if not credentials or not credentials.valid:
-        return True
-    if credentials.expired and credentials.refresh_token:
-        return credentials.expired
-    return False
+def create_flow():
+    return Flow.from_client_secrets_file(
+        CLIENT_SECRETS_FILE,
+        scopes=SCOPES,
+        redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
+    )
 
 # Redirect user to Google for authentication
 @upload_blueprint.route('/')
 def index():
+    flow = create_flow()
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true'
@@ -59,6 +53,7 @@ def retrieve_parameters():
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
     authorization_code = request.args.get('code')
+    flow = create_flow()
     flow.fetch_token(authorization_response=request.url)
 
     # Create a Google Drive service instance using the credentials
@@ -71,7 +66,7 @@ def upload_callback():
             return "Refresh token is missing. Please authenticate again."
 
     # Store the refreshed credentials
-    flow.credentials = credentials
+    stored_params[0].credentials = credentials
 
     recordings = download_zoom_recordings()
 
