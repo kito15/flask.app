@@ -13,3 +13,4 @@ celery
 redis
 schedule
 nodejs
+node
