@@ -40,6 +40,13 @@ def index():
     )
     return redirect(authorization_url) 
 
+def is_token_expired(credentials):
+    if not credentials or not credentials.valid:
+        return True
+    if credentials.expired and credentials.refresh_token:
+        return credentials.expired
+    return False
+
 def store_parameters(accountName,email):
     global stored_params
     stored_params=[accountName,email]
