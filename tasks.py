@@ -13,6 +13,21 @@ from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
 from shared_folders import account_share_links
 from requests.exceptions import ConnectionError, ChunkedEncodingError
+
+def share_folder_with_email(drive_service, folder_id, email):
+    permission = {
+        'type': 'user',
+        'role': 'writer',
+        'emailAddress': email
+    }
+    try:
+        drive_service.permissions().create(fileId=folder_id, body=permission).execute()
+        share_link = f"https://drive.google.com/drive/folders/{folder_id}"
+        print(f"Folder shared with email: {email}")
+        return share_link
+    except errors.HttpError as e:
+        print(f"Error sharing folder with email: {email}. Error: {str(e)}")
+        return None
         
 # Create a Celery instance
 celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
@@ -73,23 +88,25 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                 date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
                 video_filename = f"{topics}_{date_string}.mp4"
 
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+                if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     download_url = files['download_url']
+
                     try:
                         response = requests.get(download_url)
                         response.raise_for_status()
                         video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
-                      
-                        permission = {
-                        'type': 'user',
-                        'role': 'writer',
-                        'emailAddress': email
-                        }
-                        drive_service.permissions().create(fileId=folder_id, body=permission).execute()
-                        share_link = f"https://drive.google.com/drive/folders/{folder_id}"
-                        print(f"Folder shared with email: {email}")
-                              
+
+                        if accountName and email is not None :
+                            if accountName in topics:
+                                if accountName not in account_share_links:
+                                    share_link = share_folder_with_email(drive_service, folder_id, email)
+                                    if share_link:
+                                        account_share_links[accountName] = share_link
+                                    else:
+                                        # Account already exists in the dictionary
+                                        existing_share_link = account_share_links[accountName]
+
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
                         existing_files = drive_service.files().list(
