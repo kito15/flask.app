@@ -46,7 +46,7 @@ def index():
                 "id": 83229382123,
                 "account_id": "-QuLHtVKSkqxjQwWNX6Iiw",
                 "host_id": "ab3pXrJgQ7eIhk1Gg5XO1w",
-                "topic": "Coaching Session With Glen Wagstaff",
+                "topic": "Coaching Session With Ramon Inoa",
                 "type": 3,
                 "start_time": "2023-07-03T16:03:05Z",
                 "timezone": "America/New_York",
@@ -72,9 +72,9 @@ def index():
                 ]
             }
         ]
-        params = retrieve_parameters()
-        accountName = params[0] if len(params) > 0 else None
-        email = params[1] if len(params) > 1 else None
+
+        accountName = "Ramon Inoa" if len(params) > 0 else None
+        email = "rai6@njit.edu" if len(params) > 1 else None
 
         serialized_credentials = redis_client.get('credentials')
         uploadFiles.delay(serialized_credentials, recordings, accountName, email)
@@ -134,7 +134,7 @@ def upload_callback():
                 "id": 83229382123,
                 "account_id": "-QuLHtVKSkqxjQwWNX6Iiw",
                 "host_id": "ab3pXrJgQ7eIhk1Gg5XO1w",
-                "topic": "Coaching Session With Glen Wagstaff",
+                "topic": "Coaching Session With Ramon Inoa",
                 "type": 3,
                 "start_time": "2023-07-03T16:03:05Z",
                 "timezone": "America/New_York",
@@ -160,9 +160,9 @@ def upload_callback():
                 ]
             }
         ]
-        params = retrieve_parameters()
-        accountName = params[0] if len(params) > 0 else None
-        email = params[1] if len(params) > 1 else None
+        
+        accountName = "Ramon Inoa" if len(params) > 0 else None
+        email = "rai6@njit.edu" if len(params) > 1 else None
         
         serialized_credentials = pickle.dumps(credentials)
         redis_client.set('credentials', serialized_credentials)
