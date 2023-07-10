@@ -87,15 +87,10 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                                 'type': 'user',
                                 'role': 'writer',
                                 'emailAddress': email
-                            }
-                            try:
+                                }
                                 drive_service.permissions().create(fileId=folder_id, body=permission).execute()
                                 share_link = f"https://drive.google.com/drive/folders/{folder_id}"
                                 print(f"Folder shared with email: {email}")
-                                return share_link
-                            except errors.HttpError as e:
-                                print(f"Error sharing folder with email: {email}. Error: {str(e)}")
-
                               
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
