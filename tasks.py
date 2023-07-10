@@ -111,7 +111,7 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                         video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
                         if accountName and email is not None :
-                            if any(accountName in element for element in topic):
+                            if any(accountName in element for element in topics):
                                 if accountName not in account_share_links:
                                     share_link = share_folder_with_email(drive_service, folder_id, email)
                                     if share_link:
