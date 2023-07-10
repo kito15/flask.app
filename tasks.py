@@ -105,13 +105,11 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     download_url = files['download_url']
-
                     try:
                         response = requests.get(download_url)
                         response.raise_for_status()
                         video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
-                        print("passed check")
                         if accountName and email is not None :
                             if accountName in topics:
                                 if accountName not in account_share_links:
