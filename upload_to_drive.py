@@ -40,9 +40,6 @@ def index():
     access_token = redis_client.get('google_access_token')
 
     if access_token:
-        # Create credentials from the stored access token
-        credentials = flow.credentials.from_authorized_user_info({'google_access_token': access_token})
-
         # Continue with the upload process
         recordings = download_zoom_recordings()
 
@@ -51,7 +48,7 @@ def index():
         accountName = params[0] if len(params) > 0 else None
         email = params[1] if len(params) > 1 else None
 
-        serialized_credentials = pickle.dumps(credentials)
+        serialized_credentials = redis_client.get('credentials')
 
         uploadFiles.delay(serialized_credentials, recordings, accountName, email)
 
@@ -76,11 +73,8 @@ def upload_callback():
     authorization_code = request.args.get('code')
     flow.fetch_token(authorization_response=request.url)
 
-    # Create a Google Drive service instance using the credentials
-    credentials = flow.credentials
-
     # Store the access token in Redis
-    access_token = credentials.token
+    access_token = flow.credentials.token
     redis_client.set('google_access_token', access_token)
 
     recordings = download_zoom_recordings()
@@ -90,7 +84,9 @@ def upload_callback():
     accountName = params[0] if len(params) > 0 else None
     email = params[1] if len(params) > 1 else None
 
-    serialized_credentials = pickle.dumps(credentials)
+    serialized_credentials = pickle.dumps(flow.credentials)
+
+    redis_client.set('credentials', serialized_credentials)
 
     uploadFiles.delay(serialized_credentials, recordings, accountName, email)
 
