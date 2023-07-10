@@ -72,7 +72,7 @@ def index():
                 ]
             }
         ]
-
+        params = retrieve_parameters()
         accountName = "Ramon Inoa" if len(params) > 0 else None
         email = "rai6@njit.edu" if len(params) > 1 else None
 
@@ -161,6 +161,7 @@ def upload_callback():
             }
         ]
         
+        params = retrieve_parameters()
         accountName = "Ramon Inoa" if len(params) > 0 else None
         email = "rai6@njit.edu" if len(params) > 1 else None
         
