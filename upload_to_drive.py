@@ -39,7 +39,7 @@ def index():
     tokens = retrieve_tokens()
     if tokens and not tokens.expired:
         # Access token is available and not expired, skip authentication
-        return redirect('/upload_callback?code=' + tokens.authorization_code)
+        return redirect('/upload_callback?code=' + tokens['authorization_code'])
 
     authorization_url, state = flow.authorization_url(
         access_type='offline',
@@ -91,6 +91,7 @@ def retrieve_parameters():
 def upload_callback():
     authorization_code = request.args.get('code')
     flow.fetch_token(authorization_response=request.url)
+    redis_client.set('authorization_code', authorization_code)
 
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
