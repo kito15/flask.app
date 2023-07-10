@@ -9,5 +9,6 @@
   },
   "scripts": {
     "start": "node cron-job.js"
+    
   }
 }
