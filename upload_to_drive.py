@@ -1,6 +1,8 @@
 from flask import Flask, redirect, request, Blueprint
 from google_auth_oauthlib.flow import Flow
-from google.oauth2.credentials import Credentials
+from download import download_zoom_recordings
+from tasks import uploadFiles
+import pickle
 import os
 import redis
 
@@ -9,6 +11,10 @@ upload_blueprint.secret_key = '@unblinded2018'
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 stored_params = []
+
+# Redis configuration
+REDIS_URL = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
+redis_client = redis.Redis.from_url(REDIS_URL)
 
 # Google OAuth 2.0 configuration
 CLIENT_SECRETS_FILE = 'client_secrets.json'
@@ -20,45 +26,12 @@ SCOPES = [
     'https://www.googleapis.com/auth/userinfo.profile'
 ]
 
-# Redis configuration
-REDIS_URL = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
-redis_client = redis.from_url(REDIS_URL)
-
 # Create the Flow instance
 flow = Flow.from_client_secrets_file(
     CLIENT_SECRETS_FILE,
     scopes=SCOPES,
-    redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'
+    redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
 )
-
-
-# Function to store credentials in Redis
-def store_credentials(credentials):
-    access_token = credentials.token
-    refresh_token = credentials.refresh_token
-    expires_at = credentials.expiry.timestamp()
-    redis_client.set('google_access_token', access_token)
-    redis_client.set('google_refresh_token', refresh_token)
-    redis_client.set('expires_at', expires_at)
-
-
-# Function to load credentials from Redis
-def load_credentials():
-    access_token = redis_client.get('google_access_token')
-    refresh_token = redis_client.get('google_refresh_token')
-    expires_at = redis_client.get('expires_at')
-    if access_token and refresh_token and expires_at:
-        credentials = Credentials(
-            token=access_token,
-            refresh_token=refresh_token,
-            token_uri=flow.fetch_token_uri,
-            client_id=flow.client_config['client_id'],
-            client_secret=flow.client_config['client_secret']
-        )
-        credentials.expiry = datetime.fromtimestamp(float(expires_at))
-        return credentials
-    return None
-
 
 # Redirect user to Google for authentication
 @upload_blueprint.route('/')
@@ -67,19 +40,47 @@ def index():
         access_type='offline',
         include_granted_scopes='true'
     )
-    return redirect(authorization_url)
-
-
+    return redirect(authorization_url) 
+    
+def store_parameters(accountName, email):
+    global stored_params
+    stored_params = [accountName, email]
+    
+def retrieve_parameters():
+    global stored_params
+    return stored_params
+    
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
     authorization_code = request.args.get('code')
     flow.fetch_token(authorization_response=request.url)
 
-    # Create a Google Drive service instance using the credentials
-    credentials = flow.credentials
-    store_credentials(credentials)
+    # Retrieve access token from Redis
+    access_token = redis_client.get('google_access_token')
 
-    recordings = download_zoom_recordings()
+    if access_token:
+        # Set the access token in the credentials object
+        credentials = flow.credentials
+        credentials.token = access_token.decode('utf-8')
 
-    return "Recordings are being uploaded"
+        # Create a Google Drive service instance using the credentials
+        recordings = download_zoom_recordings()
+
+        params = retrieve_parameters()
+        accountName = params[0] if len(params) > 0 else None
+        email = params[1] if len(params) > 1 else None
+
+        serialized_credentials = pickle.dumps(credentials)
+
+        uploadFiles.delay(serialized_credentials, recordings, accountName, email)
+
+        return "Recordings are being uploaded"
+    else:
+        # Store the access token in Redis
+        credentials = flow.credentials
+        access_token = credentials.token
+
+        redis_client.set('google_access_token', access_token)
+
+        return "Access token stored in Redis. You can now log in from any device."
