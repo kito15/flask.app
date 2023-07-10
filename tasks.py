@@ -27,7 +27,7 @@ if redis_client.exists('account_share_links'):
     serialized_data = redis_client.get('account_share_links')
     account_share_links = pickle.loads(serialized_data)
 
-def store_account_share_links():
+def store_account_share_links(account_share_links):
     # Store the dictionary data in Redis
     serialized_data = pickle.dumps(account_share_links)
     redis_client.set('account_share_links', serialized_data)
@@ -115,7 +115,7 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                                 share_link = share_folder_with_email(drive_service, folder_id, email)
                                 if share_link:
                                      account_share_links[accountName] = share_link
-                                     store_account_share_links()  # Store the updated dictionary in Redis
+                                     store_account_share_links(account_share_links)  # Store the updated dictionary in Redis
                                 else:
                                     # Account already exists in the dictionary
                                     existing_share_link = account_share_links[accountName]
