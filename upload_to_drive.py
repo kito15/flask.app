@@ -81,7 +81,7 @@ def upload_callback():
     refresh_token = credentials.refresh_token
     token_url = 'https://oauth2.googleapis.com/token'
     
-    with open(client_secrets, 'r') as secrets_file:
+    with open('client_secrets.json', 'r') as secrets_file:
         client_secrets = json.load(secrets_file)
     
     token_params = {
