@@ -34,9 +34,15 @@ flow = Flow.from_client_secrets_file(
 # Create a Redis client
 redis_client = redis.Redis.from_url(redis_url)
 
-# Redirect user to Google for authentication
 @upload_blueprint.route('/')
 def index():
+    # Check if access token is already stored and valid
+    credentials = get_credentials()
+    if credentials and not credentials.expired:
+        # Access token is valid, proceed to desired functionality
+        return "Automatic login successful. Proceed to the desired functionality."
+
+    # Access token is not stored or expired, initiate authentication process
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true'
