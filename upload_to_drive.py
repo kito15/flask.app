@@ -6,6 +6,7 @@ import pickle
 from google.oauth2.credentials import Credentials
 import os
 import redis
+import requests
 
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
