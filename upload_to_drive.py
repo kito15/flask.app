@@ -86,6 +86,7 @@ def upload_callback():
         'client_secret': credentials.client_secret
     }
     response = requests.post(request_url, data=token_params)
+    print(response)
     if response.status_code == 200:
         new_credentials = Credentials.from_authorized_user_info(response.json())
         new_access_token = new_credentials.token
