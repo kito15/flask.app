@@ -77,23 +77,26 @@ def upload_callback():
 
     # Refresh the access token
     credentials = flow.credentials
-    request_url = 'https://oauth2.googleapis.com/token'
     refresh_token = credentials.refresh_token
+    token_url = 'https://oauth2.googleapis.com/token'
     token_params = {
         'grant_type': 'refresh_token',
         'refresh_token': refresh_token,
-        'client_id': credentials.client_id,
-        'client_secret': credentials.client_secret
+        'client_id': flow.client_secrets['web']['client_id'],
+        'client_secret': flow.client_secrets['web']['client_secret']
     }
-    response = requests.post(request_url, data=token_params)
-    print(response)
+    response = requests.post(token_url, data=token_params)
+
     if response.status_code == 200:
-        new_credentials = Credentials.from_authorized_user_info(response.json())
-        new_access_token = new_credentials.token
+        new_credentials = response.json()
+        new_access_token = new_credentials['access_token']
+
         # Store the new access token in Redis
         redis_client.set('google_access_token', new_access_token)
-        # Update the existing credentials with the new credentials
+
+        # Update the existing credentials with the new access token
         credentials.token = new_access_token
+
         serialized_credentials = pickle.dumps(credentials)
         redis_client.set('credentials', serialized_credentials)
 
