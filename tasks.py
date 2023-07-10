@@ -13,24 +13,6 @@ from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
 from shared_folders import account_share_links
 from requests.exceptions import ConnectionError, ChunkedEncodingError
-import redis
-
-# Create a Celery instance
-celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
-
-# Create a Redis connection
-redis_url = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
-redis_client = redis.from_url(redis_url)
-
-# Load the dictionary data from Redis (if available)
-if redis_client.exists('account_share_links'):
-    serialized_data = redis_client.get('account_share_links')
-    account_share_links = pickle.loads(serialized_data)
-
-def store_account_share_links(account_share_links):
-    # Store the dictionary data in Redis
-    serialized_data = pickle.dumps(account_share_links)
-    redis_client.set('account_share_links', serialized_data)
 
 def share_folder_with_email(drive_service, folder_id, email):
     permission = {
@@ -46,6 +28,9 @@ def share_folder_with_email(drive_service, folder_id, email):
     except errors.HttpError as e:
         print(f"Error sharing folder with email: {email}. Error: {str(e)}")
         return None
+        
+# Create a Celery instance
+celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
 
 @celery.task(bind=True, max_retries=3)
 def uploadFiles(self, serialized_credentials, recordings, accountName, email):
@@ -103,21 +88,24 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                 date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
                 video_filename = f"{topics}_{date_string}.mp4"
 
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+                if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     download_url = files['download_url']
+
                     try:
                         response = requests.get(download_url)
                         response.raise_for_status()
                         video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
-                        if any(accountName in element for element in recording['topic']):
-                            share_link = share_folder_with_email(drive_service, folder_id, email)
-                            if share_link:
-                                 account_share_links[accountName] = share_link
-                                 store_account_share_links(account_share_links)  # Store the updated dictionary in Redis
-                            else:
-                                # Account already exists in the dictionary
-                                existing_share_link = account_share_links[accountName]
+
+                        if accountName and email is not None :
+                            if accountName in topics:
+                                if accountName not in account_share_links:
+                                    share_link = share_folder_with_email(drive_service, folder_id, email)
+                                    if share_link:
+                                        account_share_links[accountName] = share_link
+                                    else:
+                                        # Account already exists in the dictionary
+                                        existing_share_link = account_share_links[accountName]
 
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
