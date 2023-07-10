@@ -14,6 +14,7 @@ from google.oauth2 import credentials as google_credentials
 from shared_folders import account_share_links
 from requests.exceptions import ConnectionError, ChunkedEncodingError
 
+
 def share_folder_with_email(drive_service, folder_id, email):
     permission = {
         'type': 'user',
