@@ -37,7 +37,7 @@ redis_client = redis.from_url(redis_url)
 @upload_blueprint.route('/')
 def index():
     # Check if access token exists in Redis
-    access_token = redis_client.get('access_token')
+    access_token = redis_client.get('google_access_token')
 
     if access_token:
         # Create credentials from the stored access token
