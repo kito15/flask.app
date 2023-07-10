@@ -3,12 +3,10 @@ from google_auth_oauthlib.flow import Flow
 from download import download_zoom_recordings
 from tasks import uploadFiles
 import pickle
-from google.oauth2.credentials import Credentials
 import os
 import redis
-import requests
 import json
-
+import requests
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
 
@@ -92,7 +90,9 @@ def upload_callback():
     }
     
     response = requests.post(token_url, data=token_params)
+
     print(response)
+    print(refresh_token)
     if response.status_code == 200:
         new_credentials = response.json()
         new_access_token = new_credentials['access_token']
@@ -106,8 +106,6 @@ def upload_callback():
         serialized_credentials = pickle.dumps(credentials)
         redis_client.set('credentials', serialized_credentials)
 
-        # Rest of your code...
-        # ...
         return "Recordings are being uploaded"
     else:
         return "Failed to refresh access token"
