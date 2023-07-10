@@ -103,21 +103,21 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                 date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
                 video_filename = f"{topics}_{date_string}.mp4"
 
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
+                if files['status'] == 'completed' and files['file_extension'] == 'MP4':
                     download_url = files['download_url']
                     try:
                         response = requests.get(download_url)
                         response.raise_for_status()
                         video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
-        
-                        share_link = share_folder_with_email(drive_service, folder_id, email)
-                        if share_link:
-                             account_share_links[accountName] = share_link
-                             store_account_share_links(account_share_links)  # Store the updated dictionary in Redis
-                        else:
-                            # Account already exists in the dictionary
-                            existing_share_link = account_share_links[accountName]
+                        if any(accountName in element for element in recording['topic']):
+                            share_link = share_folder_with_email(drive_service, folder_id, email)
+                            if share_link:
+                                 account_share_links[accountName] = share_link
+                                 store_account_share_links(account_share_links)  # Store the updated dictionary in Redis
+                            else:
+                                # Account already exists in the dictionary
+                                existing_share_link = account_share_links[accountName]
 
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
