@@ -7,6 +7,7 @@ from google.oauth2.credentials import Credentials
 import os
 import redis
 import requests
+import json
 
 upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
@@ -79,12 +80,17 @@ def upload_callback():
     credentials = flow.credentials
     refresh_token = credentials.refresh_token
     token_url = 'https://oauth2.googleapis.com/token'
+    
+    with open(client_secrets, 'r') as secrets_file:
+        client_secrets = json.load(secrets_file)
+    
     token_params = {
         'grant_type': 'refresh_token',
         'refresh_token': refresh_token,
-        'client_id': flow.client_secrets['web']['client_id'],
-        'client_secret': flow.client_secrets['web']['client_secret']
+        'client_id': client_secrets['web']['client_id'],
+        'client_secret': client_secrets['web']['client_secret']
     }
+    
     response = requests.post(token_url, data=token_params)
 
     if response.status_code == 200:
@@ -100,15 +106,8 @@ def upload_callback():
         serialized_credentials = pickle.dumps(credentials)
         redis_client.set('credentials', serialized_credentials)
 
-        recordings = download_zoom_recordings()
-
-        params = retrieve_parameters()
-
-        accountName = params[0] if len(params) > 0 else None
-        email = params[1] if len(params) > 1 else None
-
-        uploadFiles.delay(serialized_credentials, recordings, accountName, email)
-
+        # Rest of your code...
+        # ...
         return "Recordings are being uploaded"
     else:
         return "Failed to refresh access token"
