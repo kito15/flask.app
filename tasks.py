@@ -114,6 +114,7 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
 
                         if accountName and email is not None :
                             if accountName in topics:
+                                print("passed check")
                                 if accountName not in account_share_links:
                                     share_link = share_folder_with_email(drive_service, folder_id, email)
                                     if share_link:
