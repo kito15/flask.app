@@ -85,10 +85,10 @@ def upload_callback():
         client_secrets = json.load(secrets_file)
     
     token_params = {
-        'grant_type': 'refresh_token',
-        'refresh_token': refresh_token,
         'client_id': client_secrets['web']['client_id'],
-        'client_secret': client_secrets['web']['client_secret']
+        'client_secret': client_secrets['web']['client_secret'],
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token
     }
     
     response = requests.post(token_url, data=token_params)
