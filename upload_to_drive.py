@@ -1,5 +1,6 @@
 from flask import Flask, redirect, request, Blueprint
 from google_auth_oauthlib.flow import Flow
+from google.auth.transport.requests import Request
 from download import download_zoom_recordings
 from tasks import uploadFiles
 import pickle
@@ -28,6 +29,14 @@ flow = Flow.from_client_secrets_file(
     redirect_uri='https://flask-production-d5a3.up.railway.app/upload_callback'  # Replace with your domain
 )
 
+# Function to check if the access token is expired
+def is_token_expired(credentials):
+    if not credentials or not credentials.valid:
+        return True
+    if credentials.expired and credentials.refresh_token:
+        return credentials.expired
+    return False
+
 # Redirect user to Google for authentication
 @upload_blueprint.route('/')
 def index():
@@ -36,15 +45,16 @@ def index():
         include_granted_scopes='true'
     )
     return redirect(authorization_url) 
-    
+
 def store_parameters(accountName,email):
     global stored_params
     stored_params=[accountName,email]
-    
+
 def retrieve_parameters():
     global stored_params
+    stored_params[0].credentials = flow.credentials
     return stored_params
-    
+
 # Callback route after authentication
 @upload_blueprint.route('/upload_callback')
 def upload_callback():
@@ -54,15 +64,15 @@ def upload_callback():
     # Create a Google Drive service instance using the credentials
     credentials = flow.credentials
 
+    if is_token_expired(credentials):
+        if credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            return "Refresh token is missing. Please authenticate again."
+
+    # Store the refreshed credentials
+    flow.credentials = credentials
+
     recordings = download_zoom_recordings()
 
-    params=retrieve_parameters()
-    
-    accountName = params[0] if len(params) > 0 else None
-    email = params[1] if len(params) > 1 else None
-    
-    serialized_credentials = pickle.dumps(credentials)
-    
-    uploadFiles.delay(serialized_credentials,recordings,accountName,email)
-    
-    return "Recording are being uploaded"
+    return "Recordings are being uploaded"
