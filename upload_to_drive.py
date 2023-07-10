@@ -73,6 +73,7 @@ def index():
         
         accountName = "Glen Wagstaff"
         email = "rai6@njit.edu"
+
         
         serialized_credentials = redis_client.get('credentials')
         uploadFiles.delay(serialized_credentials, recordings, accountName, email)
