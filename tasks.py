@@ -87,10 +87,9 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                 start_datetime = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
                 date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
                 video_filename = f"{topics}_{date_string}.mp4"
+                download_url = files['download_url']
 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
-                    download_url = files['download_url']
-
                     try:
                         response = requests.get(download_url)
                         response.raise_for_status()
@@ -98,14 +97,9 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
 
                         if accountName and email is not None :
-                            if accountName in topics:
-                                if accountName not in account_share_links:
-                                    share_link = share_folder_with_email(drive_service, folder_id, email)
-                                    if share_link:
-                                        account_share_links[accountName] = share_link
-                                    else:
-                                        # Account already exists in the dictionary
-                                        existing_share_link = account_share_links[accountName]
+                            if any(accountName in element for element in recording['topic']):
+                                    share_folder_with_email(drive_service, folder_id, email)
+                                   
 
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
