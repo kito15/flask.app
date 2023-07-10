@@ -87,9 +87,7 @@ def upload_callback():
     }
     
     response = requests.post(token_url, data=token_params)
-    
-    print(response)
-    print(refresh_token)
+
     if response.status_code == 200:
         new_credentials = response.json()
         new_access_token = new_credentials['access_token']
