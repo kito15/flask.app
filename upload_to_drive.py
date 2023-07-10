@@ -34,7 +34,6 @@ flow = Flow.from_client_secrets_file(
 redis_url = 'redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759'
 redis_client = redis.from_url(redis_url)
 
-# Redirect user to Google for authentication
 @upload_blueprint.route('/')
 def index():
     # Check if access token exists in Redis
@@ -57,10 +56,11 @@ def index():
     else:
         authorization_url, state = flow.authorization_url(
             access_type='offline',
-            include_granted_scopes='true'
+            include_granted_scopes='true',
+            prompt='consent'
         )
         return redirect(authorization_url)
-
+        
 def store_parameters(accountName, email):
     global stored_params
     stored_params = [accountName, email]
