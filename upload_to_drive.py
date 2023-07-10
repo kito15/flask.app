@@ -41,7 +41,7 @@ def index():
 
     if access_token:
         # Create credentials from the stored access token
-        credentials = flow.credentials.from_authorized_user_info({'access_token': access_token})
+        credentials = flow.credentials.from_authorized_user_info({'google_access_token': access_token})
 
         # Continue with the upload process
         recordings = download_zoom_recordings()
@@ -81,7 +81,7 @@ def upload_callback():
 
     # Store the access token in Redis
     access_token = credentials.token
-    redis_client.set('access_token', access_token)
+    redis_client.set('google_access_token', access_token)
 
     recordings = download_zoom_recordings()
 
