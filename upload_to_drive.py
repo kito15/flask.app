@@ -89,7 +89,7 @@ def index():
         
 def store_parameters(accountName, email):
     global stored_params
-    stored_params = [accountName, email]
+    stored_params = {accountName: email}
 
 def retrieve_parameters():
     global stored_params
