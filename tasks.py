@@ -11,7 +11,6 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
-from shared_folders import account_share_links
 from requests.exceptions import ConnectionError, ChunkedEncodingError
 
 # Create a Celery instance
