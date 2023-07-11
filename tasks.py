@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
+from shared_folders import account_share_links
 from requests.exceptions import ConnectionError, ChunkedEncodingError
 
 # Create a Celery instance
@@ -46,10 +47,30 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
             folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
             
-            # Check if the accountName is in the topic
-            if accountName in topics:
-                # Share the folder with the email
-                share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
+            if accountName is not None and email is not None:
+                # Check if the accountName is in the topic
+                if accountName in topics:
+                    # Share the folder with the email
+                    share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
+
+            # Check if the folder already exists within "Automated Zoom Recordings"
+            results = drive_service.files().list(
+                q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
+                fields='files(id)',
+                spaces='drive'
+            ).execute()
+
+            if len(results['files']) > 0:
+                folder_id = results['files'][0]['id']
+            else:
+                # Create the folder within "Automated Zoom Recordings" if it doesn't exist
+                file_metadata = {
+                    'name': folder_name,
+                    'mimeType': 'application/vnd.google-apps.folder',
+                    'parents': [recordings_folder_id]
+                }
+                folder = drive_service.files().create(body=file_metadata, fields='id').execute()
+                folder_id = folder['id']
 
             for files in recording['recording_files']:
                 start_time = recording['start_time']
