@@ -87,13 +87,10 @@ def index():
                 ]
             }
         ]
-        
-        accountName = "Ramon Inoa"
-        email = "rai6@njit.edu"
 
         serialized_credentials = redis_client.get('credentials')
-        uploadFiles.delay(serialized_credentials, recordings, accountName, email)
-
+        uploadFiles.delay(serialized_credentials, recordings)
+        
         return "Recordings are being uploaded"
     else:
         authorization_url, state = flow.authorization_url(
@@ -135,14 +132,10 @@ def upload_callback():
         credentials.token = new_access_token
 
         recordings = download_zoom_recordings()
-        params = retrieve_parameters()
-        accountName = params[0] if len(params) > 0 else None
-        email = params[1] if len(params) > 1 else None
-        
         serialized_credentials = pickle.dumps(credentials)
         redis_client.set('credentials', serialized_credentials)
 
-        uploadFiles.delay(serialized_credentials, recordings, accountName, email)
+        uploadFiles.delay(serialized_credentials, recordings)
         
         return "Recordings are being uploaded"
     else:
