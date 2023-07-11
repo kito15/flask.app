@@ -49,10 +49,16 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
             topics = recording['topic']
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
             folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
-        
+            
+            folder_urls_data = redis_client.get("folder_urls")
+            if folder_urls_data:
+                folder_urls = json.loads(folder_urls_data)
+            else:
+                folder_urls = {}
+                
+            # Check if the accountName is in the topic
             if accountName is not None and email is not None:
-                # Check if the accountName is in the topic
-                if accountName in topics:
+                if accountName in topics and accountName not in folder_urls:
                     # Share the folder with the email
                     folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
                     folder_urls[accountName] = folder_url
