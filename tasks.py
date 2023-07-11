@@ -44,7 +44,10 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
             }
             recordings_folder = drive_service.files().create(body=file_metadata, fields='id').execute()
             recordings_folder_id = recordings_folder['id']
-
+            
+        stored_folder_urls = redis_client.get("folder_urls")
+        stored_folder_urls = json.loads(stored_folder_urls)
+        
         for recording in recordings:
             topics = recording['topic']
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
@@ -76,8 +79,6 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                 }
                 folder = drive_service.files().create(body=file_metadata, fields='id').execute()
                 folder_id = folder['id']
-            stored_folder_urls = redis_client.get("folder_urls")
-            stored_folder_urls = json.loads(stored_folder_urls)
 
             for files in recording['recording_files']:
                 start_time = recording['start_time']
