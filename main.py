@@ -27,8 +27,6 @@ def test():
             email=data.get('email')
 
             store_parameters(accountName,email)
-            print(retrieve_parameters())
-            
             stored_folder_urls = redis_client.get("folder_urls")
             
             if stored_folder_urls is not None:
