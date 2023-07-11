@@ -66,7 +66,7 @@ def index():
                 "start_time": "2023-07-03T16:03:05Z",
                 "timezone": "America/New_York",
                 "host_email": "admin@unblindedmastery.com",
-                "duration": 0,
+                "duration": 11,
                 "total_size": 544607,
                 "recording_count": 1,
                 "share_url": "https://us02web.zoom.us/rec/share/kEVF_Zif4BGfbNJDD00lM5aFNGSYZWYp5M3MSFudACN96akvqDxBlr0PVGtqNgRE.FagJDrDWpg01uvBv",
