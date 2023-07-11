@@ -15,6 +15,7 @@ from requests.exceptions import ConnectionError, ChunkedEncodingError
 
 # Create a Celery instance
 celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
+folder_urls = {}
 
 @celery.task(bind=True, max_retries=3)
 def uploadFiles(self, serialized_credentials, recordings, accountName, email):
@@ -50,7 +51,8 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                 # Check if the accountName is in the topic
                 if accountName in topics:
                     # Share the folder with the email
-                    share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
+                    folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
+                    folder_urls[accountName] = folder_url
 
             # Check if the folder already exists within "Automated Zoom Recordings"
             results = drive_service.files().list(
@@ -121,12 +123,13 @@ def share_folder_with_email(drive_service, folder_name, email, recordings_folder
     # Check if the folder already exists within "Automated Zoom Recordings"
     results = drive_service.files().list(
         q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
-        fields='files(id)',
+        fields='files(id, webViewLink)',
         spaces='drive'
     ).execute()
 
     if len(results['files']) > 0:
         folder_id = results['files'][0]['id']
+        folder_web_view_link = results['files'][0]['webViewLink']
     else:
         # Create the folder within "Automated Zoom Recordings" if it doesn't exist
         file_metadata = {
@@ -134,8 +137,9 @@ def share_folder_with_email(drive_service, folder_name, email, recordings_folder
             'mimeType': 'application/vnd.google-apps.folder',
             'parents': [recordings_folder_id]
         }
-        folder = drive_service.files().create(body=file_metadata, fields='id').execute()
+        folder = drive_service.files().create(body=file_metadata, fields='id, webViewLink').execute()
         folder_id = folder['id']
+        folder_web_view_link = folder['webViewLink']
 
     # Share the folder with the email
     permission_metadata = {
@@ -148,3 +152,5 @@ def share_folder_with_email(drive_service, folder_name, email, recordings_folder
         body=permission_metadata,
         fields='id'
     ).execute()
+
+    return folder_web_view_link
