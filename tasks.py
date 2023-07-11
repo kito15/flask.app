@@ -50,7 +50,7 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
             # Check if the accountName is in the topic
             if accountName in topics:
                 # Share the folder with the email
-                share_folder_with_email(drive_service, folder_name, email)
+                share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
 
             for files in recording['recording_files']:
                 start_time = recording['start_time']
@@ -98,7 +98,7 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
-def share_folder_with_email(drive_service, folder_name, email):
+def share_folder_with_email(drive_service, folder_name, email, recordings_folder_id):
     # Check if the folder already exists within "Automated Zoom Recordings"
     results = drive_service.files().list(
         q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
