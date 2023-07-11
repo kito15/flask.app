@@ -21,7 +21,7 @@ redis_url = "redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.
 redis_client = redis.from_url(redis_url)
 
 @celery.task(bind=True, max_retries=3)
-def uploadFiles(self, serialized_credentials, recordings, accountName, email):
+def uploadFiles(self, serialized_credentials, recordings):
     try:
         credentials = pickle.loads(serialized_credentials)
         API_VERSION = 'v3'
