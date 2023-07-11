@@ -44,9 +44,6 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
             }
             recordings_folder = drive_service.files().create(body=file_metadata, fields='id').execute()
             recordings_folder_id = recordings_folder['id']
-            
-        stored_folder_urls = redis_client.get("folder_urls")
-        stored_folder_urls = json.loads(stored_folder_urls)
         
         for recording in recordings:
             topics = recording['topic']
@@ -55,7 +52,7 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
         
             if accountName is not None and email is not None:
                 # Check if the accountName is in the topic
-                if accountName in topics and accountName not in stored_folder_urls:
+                if accountName in topics:
                     # Share the folder with the email
                     folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
                     folder_urls[accountName] = folder_url
