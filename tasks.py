@@ -49,8 +49,7 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
             topics = recording['topic']
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
             folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
-            stored_folder_urls = redis_client.get("folder_urls")
-            
+        
             if accountName is not None and email is not None:
                 # Check if the accountName is in the topic
                 if accountName in topics and accountName not in stored_folder_urls:
@@ -77,6 +76,8 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                 }
                 folder = drive_service.files().create(body=file_metadata, fields='id').execute()
                 folder_id = folder['id']
+            stored_folder_urls = redis_client.get("folder_urls")
+            stored_folder_urls = json.loads(stored_folder_urls)
 
             for files in recording['recording_files']:
                 start_time = recording['start_time']
