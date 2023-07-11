@@ -16,8 +16,7 @@ from requests.exceptions import ConnectionError, ChunkedEncodingError
 
 # Create a Celery instance
 celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
-redis_url = "redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759"
-redis_client = redis.from_url(redis_url)
+redis_client = redis.from_url("redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759")
 
 @celery.task(bind=True, max_retries=3)
 def uploadFiles(self, serialized_credentials, recordings):
