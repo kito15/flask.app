@@ -30,10 +30,8 @@ def test():
             
             stored_folder_urls = redis_client.get("folder_urls")
             if stored_folder_urls is not None:
-                folder_urls={}
-                folder_urls = json.loads(stored_folder_urls)
-                share_url = folder_urls.get(accountName)
-                print(share_url)
+                stored_folder_urls = json.loads(stored_folder_urls)
+                print(stored_folder_urls)
                 
             return jsonify(data)
         except Exception as e:
