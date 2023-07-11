@@ -2,6 +2,10 @@ from flask import Flask, Blueprint, session, request, jsonify
 from upload_to_drive import upload_blueprint, store_parameters, retrieve_parameters
 from zoom_authorize import zoom_blueprint
 import requests
+import redis
+
+redis_url = "redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759"
+redis_client = redis.from_url(redis_url)
 
 # Create Flask app
 app = Flask(__name__)
@@ -22,11 +26,13 @@ def test():
             email=data.get('email')
 
             store_parameters(accountName,email)
-            params=retrieve_parameters()
             
-            email=params[0]
-            print(email)
-            
+            stored_folder_urls = redis_client.get("folder_urls")
+            if stored_folder_urls is not None:
+                stored_folder_urls = json.loads(stored_folder_urls)
+                share_url = stored_folder_urls.get(account_name)
+                print(share_url)
+                
             return jsonify(data)
         except Exception as e:
             return jsonify({"error": str(e)})
