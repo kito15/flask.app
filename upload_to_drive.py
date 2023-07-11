@@ -38,6 +38,15 @@ redis_client = redis.from_url(redis_url)
 def store_parameters(accountName, email):
     global stored_params
     stored_params = {accountName : email}
+    stored_params_json = redis_client.get("stored_params")
+    if stored_params_json:
+        stored_params = json.loads(stored_params_json)
+    
+    # Merge the new parameters with the existing ones
+    stored_params[accountName] = email
+    
+    # Store the updated parameters in the database
+    redis_client.set("stored_params", json.dumps(stored_params))
 
 def retrieve_parameters():
     global stored_params
