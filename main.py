@@ -28,8 +28,6 @@ def test():
 
             store_parameters(accountName,email)
             stored_folder_urls = redis_client.get("folder_urls")
-            params=retrieve_parameters()
-            print(params)
             
             if stored_folder_urls is not None:
                 stored_folder_urls = json.loads(stored_folder_urls)
