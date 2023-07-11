@@ -1,3 +1,4 @@
+import redis
 import json
 import pickle
 import os
@@ -16,6 +17,8 @@ from requests.exceptions import ConnectionError, ChunkedEncodingError
 # Create a Celery instance
 celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
 folder_urls = {}
+redis_url = "redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759"
+redis_client = redis.from_url(redis_url)
 
 @celery.task(bind=True, max_retries=3)
 def uploadFiles(self, serialized_credentials, recordings, accountName, email):
@@ -53,6 +56,7 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                     # Share the folder with the email
                     folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
                     folder_urls[accountName] = folder_url
+                    redis_client.set("folder_urls", json.dumps(folder_urls))
 
             # Check if the folder already exists within "Automated Zoom Recordings"
             results = drive_service.files().list(
