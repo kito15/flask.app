@@ -27,15 +27,13 @@ def test():
             email=data.get('email')
 
             store_parameters(accountName,email)
-
             stored_folder_urls = redis_client.get("folder_urls")
+
             if stored_folder_urls is not None:
                 stored_folder_urls = json.loads(stored_folder_urls)
                 accountName = accountName.strip()
-                print(accountName)
                 share_url = stored_folder_urls.get(accountName)
-                print(share_url)
                 
-            return jsonify(data)
+            return jsonify(share_url)
         except Exception as e:
             return jsonify({"error": str(e)})
