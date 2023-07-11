@@ -16,10 +16,6 @@ app.secret_key = '@unblinded2018'
 app.register_blueprint(zoom_blueprint)
 app.register_blueprint(upload_blueprint)
 
-def getRequest():
-     URL = "https://flask-production-d5a3.up.railway.app/"
-     getRequest = requests.get(url = URL)
-
 @app.route('/test', methods=['GET', 'POST'])
 def test():
     if request.method == "GET":
@@ -32,8 +28,6 @@ def test():
 
             store_parameters(accountName,email)
             stored_folder_urls = redis_client.get("folder_urls")
-            
-            getRequest()
             
             if stored_folder_urls is not None:
                 stored_folder_urls = json.loads(stored_folder_urls)
