@@ -12,7 +12,7 @@ upload_blueprint = Blueprint('upload', __name__)
 upload_blueprint.secret_key = '@unblinded2018'
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-stored_params = []
+stored_params = {}
 
 # Google OAuth 2.0 configuration
 CLIENT_SECRETS_FILE = 'client_secrets.json'
