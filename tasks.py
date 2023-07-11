@@ -55,14 +55,22 @@ def uploadFiles(self, serialized_credentials, recordings):
                 existing_folder_urls = json.loads(folder_urls_data)
             else:
                 existing_folder_urls = {}
-
+                
+            # Retrieve the stored_params dictionary from Redis
+            stored_params_data = redis_client.get("stored_params")
+            if stored_params_data:
+                stored_params = json.loads(stored_params_data)
+            else:
+                stored_params = {}
+                
             # Check if the accountName is in the topic
-            if accountName is not None and email is not None:
-                if accountName in topics and accountName not in existing_folder_urls:
-                    # Share the folder with the email
-                    folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
-                    existing_folder_urls[accountName] = folder_url
-            
+            for accountName, email in stored_params.items():
+                if accountName is not None and email is not None:
+                    if accountName in topics and accountName not in existing_folder_urls:
+                        # Share the folder with the email
+                        folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
+                        existing_folder_urls[accountName] = folder_url
+                
             # Store the updated data back into the Redis database
             redis_client.set("folder_urls", json.dumps(existing_folder_urls))
 
