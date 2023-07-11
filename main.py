@@ -35,6 +35,8 @@ def test():
                 stored_folder_urls = json.loads(stored_folder_urls)
                 accountName = accountName.strip()
                 share_url = stored_folder_urls.get(accountName)
+            else:
+                share_url="The folder hasn't been shared yet."
             
             return jsonify(share_url)
         except Exception as e:
