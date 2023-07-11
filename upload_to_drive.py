@@ -44,7 +44,7 @@ def index():
                 "id": 83229382123,
                 "account_id": "-QuLHtVKSkqxjQwWNX6Iiw",
                 "host_id": "ab3pXrJgQ7eIhk1Gg5XO1w",
-                "topic": "Coaching Session With Glen Wagstaff",
+                "topic": "Coaching Session With Ramon Inoa",
                 "type": 3,
                 "start_time": "2023-07-03T16:03:05Z",
                 "timezone": "America/New_York",
@@ -71,10 +71,9 @@ def index():
             }
         ]
         
-        accountName = "Glen Wagstaff"
+        accountName = "Ramon Inoa"
         email = "rai6@njit.edu"
 
-        
         serialized_credentials = redis_client.get('credentials')
         uploadFiles.delay(serialized_credentials, recordings, accountName, email)
 
