@@ -13,7 +13,7 @@ from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
 from shared_folders import account_share_links
 from requests.exceptions import ConnectionError, ChunkedEncodingError
-   
+
 # Create a Celery instance
 celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
 
@@ -46,26 +46,11 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
             topics = recording['topic']
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
             folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
-            folder_id = None
-
-            # Check if the folder already exists within "Automated Zoom Recordings"
-            results = drive_service.files().list(
-                q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
-                fields='files(id)',
-                spaces='drive'
-            ).execute()
-
-            if len(results['files']) > 0:
-                folder_id = results['files'][0]['id']
-            else:
-                # Create the folder within "Automated Zoom Recordings" if it doesn't exist
-                file_metadata = {
-                    'name': folder_name,
-                    'mimeType': 'application/vnd.google-apps.folder',
-                    'parents': [recordings_folder_id]
-                }
-                folder = drive_service.files().create(body=file_metadata, fields='id').execute()
-                folder_id = folder['id']
+            
+            # Check if the accountName is in the topic
+            if accountName in topics:
+                # Share the folder with the email
+                share_folder_with_email(drive_service, folder_name, email)
 
             for files in recording['recording_files']:
                 start_time = recording['start_time']
@@ -74,24 +59,13 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
                 video_filename = f"{topics}_{date_string}.mp4"
                 download_url = files['download_url']
 
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4':
+                if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
                         response = requests.get(download_url)
                         response.raise_for_status()
                         video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
 
-                        if accountName and email is not None :
-                            if any(accountName in element for element in recording['topic']):
-                              permission = {
-                                  'type': 'user',
-                                  'role': 'writer',
-                                  'emailAddress': email
-                                  }
-                              drive_service.permissions().create(fileId=folder_id, body=permission).execute()
-                              share_link = f"https://drive.google.com/drive/folders/{folder_id}"
-                              print(f"Folder shared with email: {email}")
-                             
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
                         existing_files = drive_service.files().list(
@@ -123,3 +97,35 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
+
+def share_folder_with_email(drive_service, folder_name, email):
+    # Check if the folder already exists within "Automated Zoom Recordings"
+    results = drive_service.files().list(
+        q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
+        fields='files(id)',
+        spaces='drive'
+    ).execute()
+
+    if len(results['files']) > 0:
+        folder_id = results['files'][0]['id']
+    else:
+        # Create the folder within "Automated Zoom Recordings" if it doesn't exist
+        file_metadata = {
+            'name': folder_name,
+            'mimeType': 'application/vnd.google-apps.folder',
+            'parents': [recordings_folder_id]
+        }
+        folder = drive_service.files().create(body=file_metadata, fields='id').execute()
+        folder_id = folder['id']
+
+    # Share the folder with the email
+    permission_metadata = {
+        'type': 'user',
+        'role': 'writer',
+        'emailAddress': email
+    }
+    drive_service.permissions().create(
+        fileId=folder_id,
+        body=permission_metadata,
+        fields='id'
+    ).execute()
