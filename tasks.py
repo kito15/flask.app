@@ -52,17 +52,19 @@ def uploadFiles(self, serialized_credentials, recordings, accountName, email):
             
             folder_urls_data = redis_client.get("folder_urls")
             if folder_urls_data:
-                folder_urls = json.loads(folder_urls_data)
+                existing_folder_urls = json.loads(folder_urls_data)
             else:
-                folder_urls = {}
-                
+                existing_folder_urls = {}
+
             # Check if the accountName is in the topic
             if accountName is not None and email is not None:
-                if accountName in topics and accountName not in folder_urls:
+                if accountName in topics and accountName not in existing_folder_urls:
                     # Share the folder with the email
                     folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
-                    folder_urls[accountName] = folder_url
-                    redis_client.set("folder_urls", json.dumps(folder_urls))
+                    existing_folder_urls[accountName] = folder_url
+            
+            # Store the updated data back into the Redis database
+            redis_client.set("folder_urls", json.dumps(existing_folder_urls))
 
             # Check if the folder already exists within "Automated Zoom Recordings"
             results = drive_service.files().list(
