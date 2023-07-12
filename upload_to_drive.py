@@ -63,7 +63,7 @@ def index():
                 "host_id": "ab3pXrJgQ7eIhk1Gg5XO1w",
                 "topic": "Unblinded Virtual Immersion",
                 "type": 3,
-                "start_time": "2023-07-03T16:03:05Z",
+                "start_time": "2023-07-01T15:03:05Z",
                 "timezone": "America/New_York",
                 "host_email": "admin@unblindedmastery.com",
                 "duration": 11,
