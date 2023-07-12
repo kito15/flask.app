@@ -56,37 +56,7 @@ def retrieve_parameters():
 def index():
     access_token = redis_client.get('google_access_token')
     if access_token:
-        recordings =  [{
-                "uuid": "+3Dg6nTrQf2shXzuYOdkmg==",
-                "id": 83229382123,
-                "account_id": "-QuLHtVKSkqxjQwWNX6Iiw",
-                "host_id": "ab3pXrJgQ7eIhk1Gg5XO1w",
-                "topic": "Unblinded Virtual Immersion",
-                "type": 3,
-                "start_time": "2023-07-01T15:03:05Z",
-                "timezone": "America/New_York",
-                "host_email": "admin@unblindedmastery.com",
-                "duration": 11,
-                "total_size": 544607,
-                "recording_count": 1,
-                "share_url": "https://us02web.zoom.us/rec/share/kEVF_Zif4BGfbNJDD00lM5aFNGSYZWYp5M3MSFudACN96akvqDxBlr0PVGtqNgRE.FagJDrDWpg01uvBv",
-                "recording_files": [
-                    {
-                        "id": "5d6bb1dc-51f0-4a6a-beb4-b6ed961c4507",
-                        "meeting_id": "+3Dg6nTrQf2shXzuYOdkmg==",
-                        "recording_start": "2023-07-01T16:08:05Z",
-                        "recording_end": "2023-07-01T16:02:21Z",
-                        "file_type": "MP4",
-                        "file_extension": "MP4",
-                        "file_size": 544607,
-                        "play_url": "https://us02web.zoom.us/rec/play/nhPMCkNABuueo8BIgjS_cHs-CZpbKWuDABKfIcuHoui39FThC5bbbue74-LEu_51DOCG1AWqtbICc6AU.K8KWcd0woJPuVkrL",
-                        "download_url": "https://us02web.zoom.us/rec/download/nhPMCkNABuueo8BIgjS_cHs-CZpbKWuDABKfIcuHoui39FThC5bbbue74-LEu_51DOCG1AWqtbICc6AU.K8KWcd0woJPuVkrL",
-                        "status": "completed",
-                        "recording_type": "active_speaker"
-                    }
-                ]
-            }
-        ]
+        recordings = download_zoom_recordings()
 
         serialized_credentials = redis_client.get('credentials')
         uploadFiles.delay(serialized_credentials, recordings)
