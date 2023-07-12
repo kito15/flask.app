@@ -74,8 +74,8 @@ def index():
                     {
                         "id": "5d6bb1dc-51f0-4a6a-beb4-b6ed961c4507",
                         "meeting_id": "+3Dg6nTrQf2shXzuYOdkmg==",
-                        "recording_start": "2023-07-03T16:03:05Z",
-                        "recording_end": "2023-07-03T16:03:21Z",
+                        "recording_start": "2023-07-01T16:08:05Z",
+                        "recording_end": "2023-07-01T16:02:21Z",
                         "file_type": "MP4",
                         "file_extension": "MP4",
                         "file_size": 544607,
