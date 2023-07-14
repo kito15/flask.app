@@ -1,13 +1,6 @@
-import redis
-import json
-import pickle
-import os
-import requests
 import io
-import tempfile
 from celery import Celery
 from datetime import datetime
-import urllib.parse
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
@@ -43,24 +36,25 @@ def uploadFiles(self, serialized_credentials, recordings):
             recordings_folder = drive_service.files().create(body=file_metadata, fields='id').execute()
             recordings_folder_id = recordings_folder['id']
         
-        for recording in recordings:
+        # Retrieve folder_urls and stored_params data from Redis
+        folder_urls_data = redis_client.get("folder_urls")
+        existing_folder_urls = json.loads(folder_urls_data) if folder_urls_data else {}
+
+        stored_params_data = redis_client.get("stored_params")
+        stored_params = json.loads(stored_params_data) if stored_params_data else {}
+        
+        # Define a generator function to yield the recording files
+        def get_recording_files(recordings):
+            for recording in recordings:
+                for file in recording['recording_files']:
+                    yield recording, file
+        
+        # Iterate over the recording files
+        for recording, files in get_recording_files(recordings):
             topics = recording['topic']
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
             folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
             
-            folder_urls_data = redis_client.get("folder_urls")
-            if folder_urls_data:
-                existing_folder_urls = json.loads(folder_urls_data)
-            else:
-                existing_folder_urls = {}
-                
-            # Retrieve the stored_params dictionary from Redis
-            stored_params_data = redis_client.get("stored_params")
-            if stored_params_data:
-                stored_params = json.loads(stored_params_data)
-            else:
-                stored_params = {}
-                
             # Check if the accountName is in the topic
             for accountName, email in stored_params.items():
                 if accountName is not None and email is not None:
@@ -68,7 +62,7 @@ def uploadFiles(self, serialized_credentials, recordings):
                         # Share the folder with the email
                         folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
                         existing_folder_urls[accountName] = folder_url
-                
+            
             # Store the updated data back into the Redis database
             redis_client.set("folder_urls", json.dumps(existing_folder_urls))
 
@@ -100,9 +94,8 @@ def uploadFiles(self, serialized_credentials, recordings):
 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        response = requests.get(download_url)
+                        response = requests.get(download_url, stream=True)
                         response.raise_for_status()
-                        video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
 
                         # Check if a file with the same name already exists in the folder
@@ -123,12 +116,18 @@ def uploadFiles(self, serialized_credentials, recordings):
                             'name': video_filename,
                             'parents': [folder_id]
                         }
-                        media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                        drive_service.files().create(
+                        media = MediaIoBaseUpload(response.raw, mimetype='video/mp4', resumable=True)
+                        request = drive_service.files().create(
                             body=file_metadata,
                             media_body=media,
                             fields='id'
-                        ).execute()
+                        )
+                        response = None
+                        while response is None:
+                            status, response = request.next_chunk()
+                            if status:
+                                print(f"Uploaded {status.progress() * 100:.2f}%")
+                        print(f"Video '{video_filename}' uploaded successfully.")
 
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
