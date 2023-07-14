@@ -1,4 +1,5 @@
 import io
+import pickle
 import redis
 from celery import Celery
 from datetime import datetime
