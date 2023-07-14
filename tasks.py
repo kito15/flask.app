@@ -1,6 +1,7 @@
 import requests
 import io
-import tempfile
+import redis
+import pickle
 from celery import Celery
 from datetime import datetime
 import urllib.parse
