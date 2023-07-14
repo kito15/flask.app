@@ -1,6 +1,5 @@
 import requests
 import io
-import pickle
 import tempfile
 from celery import Celery
 from datetime import datetime
@@ -13,6 +12,7 @@ from requests.exceptions import ConnectionError, ChunkedEncodingError
 
 # Create a Celery instance
 celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
+redis_client = redis.from_url("redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759")
 
 @celery.task(bind=True, max_retries=3)
 def uploadFiles(self, serialized_credentials, recordings):
@@ -44,6 +44,19 @@ def uploadFiles(self, serialized_credentials, recordings):
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
             folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
             
+            folder_urls_data = redis_client.get("folder_urls")
+            if folder_urls_data:
+                existing_folder_urls = json.loads(folder_urls_data)
+            else:
+                existing_folder_urls = {}
+                
+            # Retrieve the stored_params dictionary from Redis
+            stored_params_data = redis_client.get("stored_params")
+            if stored_params_data:
+                stored_params = json.loads(stored_params_data)
+            else:
+                stored_params = {}
+                
             # Check if the accountName is in the topic
             for accountName, email in stored_params.items():
                 if accountName is not None and email is not None:
@@ -52,6 +65,9 @@ def uploadFiles(self, serialized_credentials, recordings):
                         folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
                         existing_folder_urls[accountName] = folder_url
                 
+            # Store the updated data back into the Redis database
+            redis_client.set("folder_urls", json.dumps(existing_folder_urls))
+
             # Check if the folder already exists within "Automated Zoom Recordings"
             results = drive_service.files().list(
                 q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
@@ -80,41 +96,35 @@ def uploadFiles(self, serialized_credentials, recordings):
 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        with requests.get(download_url, stream=True) as response:
-                            response.raise_for_status()
-                            video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
+                        response = requests.get(download_url)
+                        response.raise_for_status()
+                        video_content = response.content
+                        video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
 
-                            # Check if a file with the same name already exists in the folder
-                            query = f"name='{video_filename}' and '{folder_id}' in parents"
-                            existing_files = drive_service.files().list(
-                                q=query,
-                                fields='files(id)',
-                                spaces='drive',
-                                pageSize=1
-                            ).execute()
+                        # Check if a file with the same name already exists in the folder
+                        query = f"name='{video_filename}' and '{folder_id}' in parents"
+                        existing_files = drive_service.files().list(
+                            q=query,
+                            fields='files(id)',
+                            spaces='drive'
+                        ).execute()
 
-                            if len(existing_files['files']) > 0:
-                                # File with the same name already exists, skip uploading
-                                print(f"Skipping upload of '{video_filename}' as it already exists.")
-                                continue
+                        if len(existing_files['files']) > 0:
+                            # File with the same name already exists, skip uploading
+                            print(f"Skipping upload of '{video_filename}' as it already exists.")
+                            continue
 
-                            # Upload the video to the folder in Google Drive
-                            file_metadata = {
-                                'name': video_filename,
-                                'parents': [folder_id]
-                            }
-                            media = MediaIoBaseUpload(io.BytesIO(), mimetype='video/mp4', resumable=True)
-                            upload_request = drive_service.files().create(
-                                body=file_metadata,
-                                media_body=media,
-                                fields='id'
-                            )
-                            fh = io.BytesIO()
-                            for chunk in response.iter_content(chunk_size=3144):
-                                fh.write(chunk)
-                            fh.seek(0)
-                            media.fd = fh
-                            upload_request.execute()
+                        # Upload the video to the folder in Google Drive
+                        file_metadata = {
+                            'name': video_filename,
+                            'parents': [folder_id]
+                        }
+                        media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
+                        drive_service.files().create(
+                            body=file_metadata,
+                            media_body=media,
+                            fields='id'
+                        ).execute()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
