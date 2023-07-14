@@ -23,42 +23,26 @@ def uploadFiles(self, serialized_credentials, recordings):
         drive_service = build('drive', API_VERSION, credentials=credentials)
 
         # Check if the "Automated Zoom Recordings" folder already exists
-        results = drive_service.files().list(
-            q="name='Automated Zoom Recordings' and mimeType='application/vnd.google-apps.folder'",
-            fields='files(id)',
-            spaces='drive'
-        ).execute()
+        recordings_folder_id = get_or_create_folder(drive_service, 'Automated Zoom Recordings')
 
-        if len(results['files']) > 0:
-            recordings_folder_id = results['files'][0]['id']
-        else:
-            # Create the "Automated Zoom Recordings" folder if it doesn't exist
-            file_metadata = {
-                'name': 'Automated Zoom Recordings',
-                'mimeType': 'application/vnd.google-apps.folder'
-            }
-            recordings_folder = drive_service.files().create(body=file_metadata, fields='id').execute()
-            recordings_folder_id = recordings_folder['id']
-        
-        # Retrieve folder_urls and stored_params data from Redis
-        folder_urls_data = redis_client.get("folder_urls")
-        existing_folder_urls = json.loads(folder_urls_data) if folder_urls_data else {}
-
-        stored_params_data = redis_client.get("stored_params")
-        stored_params = json.loads(stored_params_data) if stored_params_data else {}
-        
-        # Define a generator function to yield the recording files
-        def get_recording_files(recordings):
-            for recording in recordings:
-                for file in recording['recording_files']:
-                    yield recording, file
-        
-        # Iterate over the recording files
-        for recording, files in get_recording_files(recordings):
+        for recording in recordings:
             topics = recording['topic']
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
             folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
-            
+
+            folder_urls_data = redis_client.get("folder_urls")
+            if folder_urls_data:
+                existing_folder_urls = json.loads(folder_urls_data)
+            else:
+                existing_folder_urls = {}
+
+            # Retrieve the stored_params dictionary from Redis
+            stored_params_data = redis_client.get("stored_params")
+            if stored_params_data:
+                stored_params = json.loads(stored_params_data)
+            else:
+                stored_params = {}
+
             # Check if the accountName is in the topic
             for accountName, email in stored_params.items():
                 if accountName is not None and email is not None:
@@ -66,28 +50,12 @@ def uploadFiles(self, serialized_credentials, recordings):
                         # Share the folder with the email
                         folder_url = share_folder_with_email(drive_service, folder_name, email, recordings_folder_id)
                         existing_folder_urls[accountName] = folder_url
-            
+
             # Store the updated data back into the Redis database
             redis_client.set("folder_urls", json.dumps(existing_folder_urls))
 
             # Check if the folder already exists within "Automated Zoom Recordings"
-            results = drive_service.files().list(
-                q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
-                fields='files(id)',
-                spaces='drive'
-            ).execute()
-
-            if len(results['files']) > 0:
-                folder_id = results['files'][0]['id']
-            else:
-                # Create the folder within "Automated Zoom Recordings" if it doesn't exist
-                file_metadata = {
-                    'name': folder_name,
-                    'mimeType': 'application/vnd.google-apps.folder',
-                    'parents': [recordings_folder_id]
-                }
-                folder = drive_service.files().create(body=file_metadata, fields='id').execute()
-                folder_id = folder['id']
+            folder_id = get_or_create_folder(drive_service, folder_name, recordings_folder_id)
 
             for files in recording['recording_files']:
                 start_time = recording['start_time']
@@ -98,8 +66,9 @@ def uploadFiles(self, serialized_credentials, recordings):
 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        response = requests.get(download_url, stream=True)
+                        response = requests.get(download_url)
                         response.raise_for_status()
+                        video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
 
                         # Check if a file with the same name already exists in the folder
@@ -120,18 +89,12 @@ def uploadFiles(self, serialized_credentials, recordings):
                             'name': video_filename,
                             'parents': [folder_id]
                         }
-                        media = MediaIoBaseUpload(response.raw, mimetype='video/mp4', resumable=True)
-                        request = drive_service.files().create(
+                        media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
+                        drive_service.files().create(
                             body=file_metadata,
                             media_body=media,
                             fields='id'
-                        )
-                        response = None
-                        while response is None:
-                            status, response = request.next_chunk()
-                            if status:
-                                print(f"Uploaded {status.progress() * 100:.2f}%")
-                        print(f"Video '{video_filename}' uploaded successfully.")
+                        ).execute()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
@@ -140,27 +103,38 @@ def uploadFiles(self, serialized_credentials, recordings):
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
-def share_folder_with_email(drive_service, folder_name, email, recordings_folder_id):
-    # Check if the folder already exists within "Automated Zoom Recordings"
+def get_or_create_folder(drive_service, folder_name, parent_folder_id=None):
+    if parent_folder_id:
+        query = f"name='{folder_name}' and '{parent_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'"
+    else:
+        query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
+
     results = drive_service.files().list(
-        q=f"name='{folder_name}' and '{recordings_folder_id}' in parents and mimeType='application/vnd.google-apps.folder'",
-        fields='files(id, webViewLink)',
+        q=query,
+        fields='files(id)',
         spaces='drive'
     ).execute()
 
     if len(results['files']) > 0:
-        folder_id = results['files'][0]['id']
-        folder_web_view_link = results['files'][0]['webViewLink']
+        return results['files'][0]['id']
     else:
-        # Create the folder within "Automated Zoom Recordings" if it doesn't exist
-        file_metadata = {
-            'name': folder_name,
-            'mimeType': 'application/vnd.google-apps.folder',
-            'parents': [recordings_folder_id]
-        }
-        folder = drive_service.files().create(body=file_metadata, fields='id, webViewLink').execute()
-        folder_id = folder['id']
-        folder_web_view_link = folder['webViewLink']
+        if parent_folder_id:
+            file_metadata = {
+                'name': folder_name,
+                'mimeType': 'application/vnd.google-apps.folder',
+                'parents': [parent_folder_id]
+            }
+        else:
+            file_metadata = {
+                'name': folder_name,
+                'mimeType': 'application/vnd.google-apps.folder'
+            }
+
+        folder = drive_service.files().create(body=file_metadata, fields='id').execute()
+        return folder['id']
+
+def share_folder_with_email(drive_service, folder_name, email, recordings_folder_id):
+    folder_id = get_or_create_folder(drive_service, folder_name, recordings_folder_id)
 
     # Share the folder with the email
     permission_metadata = {
@@ -174,4 +148,10 @@ def share_folder_with_email(drive_service, folder_name, email, recordings_folder
         fields='id'
     ).execute()
 
-    return folder_web_view_link
+    results = drive_service.files().get(
+        fileId=folder_id,
+        fields='webViewLink',
+        supportsAllDrives=True
+    ).execute()
+
+    return results['webViewLink']
