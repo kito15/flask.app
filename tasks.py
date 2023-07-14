@@ -1,4 +1,5 @@
 import io
+import redis
 from celery import Celery
 from datetime import datetime
 from google_auth_oauthlib.flow import Flow
