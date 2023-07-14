@@ -1,4 +1,5 @@
 import requests
+import pytz
 from datetime import datetime, timedelta
 import json
 import redis
@@ -12,9 +13,10 @@ def download_zoom_recordings():
         print("Access token not found in session. Please authenticate with Zoom.")
         return
     headers = {"Authorization": "Bearer " + access_token.decode()}
-    
-    end_date = datetime.now()
-    start_date = datetime(2023, 7, 12)
+
+    eastern_tz = pytz.timezone('US/Eastern')
+    end_date = datetime.now(eastern_tz)
+    start_date = end_date - timedelta(days=1)
     all_recordings = []
     current_date = end_date
 
