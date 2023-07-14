@@ -66,35 +66,39 @@ def uploadFiles(self, serialized_credentials, recordings):
 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        response = requests.get(download_url)
-                        response.raise_for_status()
-                        video_content = response.content
-                        video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
+                        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
+                            # Download the video file
+                            with requests.get(download_url, stream=True) as response:
+                                response.raise_for_status()
+                                for chunk in response.iter_content(chunk_size=8192):
+                                    temp_file.write(chunk)
 
-                        # Check if a file with the same name already exists in the folder
-                        query = f"name='{video_filename}' and '{folder_id}' in parents"
-                        existing_files = drive_service.files().list(
-                            q=query,
-                            fields='files(id)',
-                            spaces='drive'
-                        ).execute()
+                            temp_file.seek(0)
 
-                        if len(existing_files['files']) > 0:
-                            # File with the same name already exists, skip uploading
-                            print(f"Skipping upload of '{video_filename}' as it already exists.")
-                            continue
+                            # Check if a file with the same name already exists in the folder
+                            query = f"name='{video_filename}' and '{folder_id}' in parents"
+                            existing_files = drive_service.files().list(
+                                q=query,
+                                fields='files(id)',
+                                spaces='drive'
+                            ).execute()
 
-                        # Upload the video to the folder in Google Drive
-                        file_metadata = {
-                            'name': video_filename,
-                            'parents': [folder_id]
-                        }
-                        media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                        drive_service.files().create(
-                            body=file_metadata,
-                            media_body=media,
-                            fields='id'
-                        ).execute()
+                            if len(existing_files['files']) > 0:
+                                # File with the same name already exists, skip uploading
+                                print(f"Skipping upload of '{video_filename}' as it already exists.")
+                                continue
+
+                            # Upload the video to the folder in Google Drive
+                            file_metadata = {
+                                'name': video_filename,
+                                'parents': [folder_id]
+                            }
+                            media = MediaFileUpload(temp_file.name, mimetype='video/mp4')
+                            drive_service.files().create(
+                                body=file_metadata,
+                                media_body=media,
+                                fields='id'
+                            ).execute()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
