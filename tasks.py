@@ -99,7 +99,9 @@ def uploadFiles(self, serialized_credentials, recordings):
 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
+                        # Use streaming to download the video content in chunks
+                        response = requests.get(download_url, stream=True)
+                        response.raise_for_status()
 
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
@@ -114,25 +116,17 @@ def uploadFiles(self, serialized_credentials, recordings):
                             print(f"Skipping upload of '{video_filename}' as it already exists.")
                             continue
 
-                        # Use requests library to stream the video and upload it in chunks
-                        with requests.get(download_url, stream=True) as response:
-                            response.raise_for_status()
-                            with io.BytesIO() as video_content:
-                                for chunk in response.iter_content(chunk_size=3072):
-                                    video_content.write(chunk)
-                                video_content.seek(0)  # Reset the position to the beginning
-
-                                # Upload the video chunks to the folder in Google Drive
-                                file_metadata = {
-                                    'name': video_filename,
-                                    'parents': [folder_id]
-                                }
-                                media = MediaIoBaseUpload(video_content, mimetype='video/mp4')
-                                drive_service.files().create(
-                                    body=file_metadata,
-                                    media_body=media,
-                                    fields='id'
-                                ).execute()
+                        # Upload the video to the folder in Google Drive using streaming
+                        file_metadata = {
+                            'name': video_filename,
+                            'parents': [folder_id]
+                        }
+                        media = MediaIoBaseUpload(io.BytesIO(response.content), mimetype='video/mp4', chunksize=4096)
+                        drive_service.files().create(
+                            body=file_metadata,
+                            media_body=media,
+                            fields='id'
+                        ).execute()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
