@@ -122,10 +122,11 @@ def uploadFiles(self, serialized_credentials, recordings):
                         }
                         media = MediaIoBaseUpload(io.BytesIO(), mimetype='video/mp4', resumable=True)
 
-                        with media as fd:
+                        with io.BytesIO() as fd:
                             for chunk in response.iter_content(chunk_size=1024 * 1024):  # Chunks of 1MB
                                 if chunk:
                                     fd.write(chunk)
+                            media.content = fd.getvalue()
 
                         drive_service.files().create(
                             body=file_metadata,
