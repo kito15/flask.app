@@ -95,9 +95,8 @@ def uploadFiles(self, serialized_credentials, recordings):
                 date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
                 video_filename = f"{topics}_{date_string}.mp4"
                 download_url = files['download_url']
-
                
-               if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
+                if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
                         response = requests.get(download_url, stream=True)
                         response.raise_for_status()
