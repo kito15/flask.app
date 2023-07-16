@@ -97,9 +97,8 @@ def uploadFiles(self, serialized_credentials, recordings):
                 download_url = files['download_url']
 
                
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
+               if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        # Download the video in chunks to avoid loading the entire video into memory
                         response = requests.get(download_url, stream=True)
                         response.raise_for_status()
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
@@ -122,7 +121,7 @@ def uploadFiles(self, serialized_credentials, recordings):
                             'name': video_filename,
                             'parents': [folder_id]
                         }
-                        media = MediaIoBaseUpload(io.BytesIO(), mimetype='video/mp4', chunksize=-1, resumable=True)
+                        media = MediaIoBaseUpload(io.BytesIO(), mimetype='video/mp4', chunksize=1024 * 1024, resumable=True)
                         request = drive_service.files().create(
                             body=file_metadata,
                             media_body=media,
@@ -130,13 +129,12 @@ def uploadFiles(self, serialized_credentials, recordings):
                         )
 
                         # Chunked upload the video content
-                        for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        for chunk in response.iter_content(chunk_size=1024 * 1024):  # 1 MB chunks, you can adjust this size
                             if chunk:
-                                media.buffer.write(chunk)
+                                media.file.write(chunk)
                                 print(f"Uploaded {media.resumable_progress} bytes")
 
-                        # Finalize the upload
-                        media.buffer.seek(0)
+                        media.file.seek(0)
                         request.execute()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
