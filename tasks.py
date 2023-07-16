@@ -115,20 +115,21 @@ def uploadFiles(self, serialized_credentials, recordings):
                             print(f"Skipping upload of '{video_filename}' as it already exists.")
                             continue
 
+                        # Capture the video content in a BytesIO object
+                        video_content = io.BytesIO()
+                        for chunk in response.iter_content(chunk_size=1024 * 1024):  # Chunks of 1MB
+                            if chunk:
+                                video_content.write(chunk)
+
+                        # Reset the file pointer to the beginning of the content
+                        video_content.seek(0)
+
                         # Upload the video to the folder in Google Drive
                         file_metadata = {
                             'name': video_filename,
                             'parents': [folder_id]
                         }
-                        media = MediaIoBaseUpload(io.BytesIO(), mimetype='video/mp4', resumable=True)
-
-                        with media as fd:
-                            for chunk in response.iter_content(chunk_size=4096 * 4096):  # Chunks of 1MB
-                                if chunk:
-                                    fd.write(chunk)
-
-                        # Seek back to the beginning of the file before uploading
-                        media.stream.seek(0)
+                        media = MediaIoBaseUpload(video_content, mimetype='video/mp4', resumable=True)
 
                         drive_service.files().create(
                             body=file_metadata,
