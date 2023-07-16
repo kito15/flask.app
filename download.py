@@ -15,8 +15,9 @@ def download_zoom_recordings():
     headers = {"Authorization": "Bearer " + access_token.decode()}
 
     eastern_tz = pytz.timezone('US/Eastern')
-    end_date = datetime.now(eastern_tz)
-    start_date = end_date - timedelta(days=1)
+    
+    end_date = datetime(2023, 7, 15)
+    start_date = datetime(2023, 7, 14)
     all_recordings = []
     current_date = end_date
 
