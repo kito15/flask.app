@@ -5,6 +5,7 @@ from celery import Celery
 from datetime import datetime
 import urllib.parse
 from google_auth_oauthlib.flow import Flow
+import redis
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
