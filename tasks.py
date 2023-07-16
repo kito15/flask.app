@@ -3,6 +3,7 @@ import io
 import redis
 import json
 import pickle
+import httplib2
 from celery import Celery
 from datetime import datetime
 import urllib.parse
@@ -10,7 +11,6 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
-from google.resumable_media import requests as resumable_requests
 from requests.exceptions import ConnectionError, ChunkedEncodingError
 
 # Create a Celery instance
@@ -131,12 +131,15 @@ def uploadFiles(self, serialized_credentials, recordings):
 
                         # Chunked upload the video content
                         chunk_size = 1024 * 1024  # 1 MB chunks, you can adjust this size
-                        upload = resumable_requests.ResumableUpload(request, io.BytesIO(response.content), chunk_size=chunk_size)
-                        while not upload.finished:
-                            _, upload = upload.next_chunk(http=response)
-
-                        # Finalize the upload
-                        request.execute()
+                        media_fd = io.BytesIO(response.content)
+                        while True:
+                            chunk = media_fd.read(chunk_size)
+                            if not chunk:
+                                break
+                            request.resumable_upload(chunk)
+                        response = None
+                        while response is None:
+                            _, response = request.next_chunk()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading or uploading recording: {str(e)}")
