@@ -101,8 +101,7 @@ def uploadFiles(self, serialized_credentials, recordings):
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
                         response = requests.get(download_url, stream=True)
-
-                        # Check if a file with the same name already exists in the folder
+                      
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
                         existing_files = drive_service.files().list(
                             q=query,
@@ -128,18 +127,29 @@ def uploadFiles(self, serialized_credentials, recordings):
                             resumable=True
                         )
 
-                        # Stream the video content in chunks
-                        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
-                            if chunk:
-                                media.resumable_upload = True
-                                media.bytes_uploaded = media.bytes_uploaded + len(chunk)
-                                media.file_handle = io.BytesIO(chunk)
-                                upload_progress, response = drive_service.files().create(
-                                    body=file_metadata,
-                                    media_body=media,
-                                    fields='id',
-                                    supportsTeamDrives=True
-                                ).next_chunk()
+                        with io.BytesIO() as file_stream:
+                            for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                                if chunk:
+                                    file_stream.write(chunk)
+
+                                    # Upload the chunk to Google Drive
+                                    file_stream.seek(0)
+                                    media = MediaIoBaseUpload(
+                                        file_stream,
+                                        mimetype='video/mp4',
+                                        chunksize=CHUNK_SIZE,
+                                        resumable=True
+                                    )
+
+                                    request = drive_service.files().create(
+                                        body=file_metadata,
+                                        media_body=media,
+                                        fields='id',
+                                        supportsTeamDrives=True
+                                    )
+                                    response = None
+                                    while response is None:
+                                        _, response = request.next_chunk()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
