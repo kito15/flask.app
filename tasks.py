@@ -122,11 +122,13 @@ def uploadFiles(self, serialized_credentials, recordings):
                         }
                         media = MediaIoBaseUpload(io.BytesIO(), mimetype='video/mp4', resumable=True)
 
-                        with io.BytesIO() as fd:
-                            for chunk in response.iter_content(chunk_size=1024 * 1024):  # Chunks of 1MB
+                        with media as fd:
+                            for chunk in response.iter_content(chunk_size=4096 * 4096):  # Chunks of 1MB
                                 if chunk:
                                     fd.write(chunk)
-                            media.content = fd.getvalue()
+
+                        # Seek back to the beginning of the file before uploading
+                        media.stream.seek(0)
 
                         drive_service.files().create(
                             body=file_metadata,
@@ -140,7 +142,7 @@ def uploadFiles(self, serialized_credentials, recordings):
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
+        
 def share_folder_with_email(drive_service, folder_name, email, recordings_folder_id):
     # Check if the folder already exists within "Automated Zoom Recordings"
     results = drive_service.files().list(
