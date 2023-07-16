@@ -100,7 +100,7 @@ def uploadFiles(self, serialized_credentials, recordings):
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
-    
+
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
                         existing_files = drive_service.files().list(
@@ -108,38 +108,39 @@ def uploadFiles(self, serialized_credentials, recordings):
                             fields='files(id)',
                             spaces='drive'
                         ).execute()
-    
+
                         if len(existing_files['files']) > 0:
                             # File with the same name already exists, skip uploading
                             print(f"Skipping upload of '{video_filename}' as it already exists.")
                             continue
-    
+
                         # Use requests library to stream the video and upload it in chunks
                         with requests.get(download_url, stream=True) as response:
                             response.raise_for_status()
-                            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                            with io.BytesIO() as video_content:
                                 for chunk in response.iter_content(chunk_size=3072):
-                                    temp_file.write(chunk)
-                            
-                            # Upload the video chunks to the folder in Google Drive
-                            file_metadata = {
-                                'name': video_filename,
-                                'parents': [folder_id]
-                            }
-                            media = MediaIoBaseUpload(temp_file.name, mimetype='video/mp4')
-                            drive_service.files().create(
-                                body=file_metadata,
-                                media_body=media,
-                                fields='id'
-                            ).execute()
-    
+                                    video_content.write(chunk)
+                                video_content.seek(0)  # Reset the position to the beginning
+
+                                # Upload the video chunks to the folder in Google Drive
+                                file_metadata = {
+                                    'name': video_filename,
+                                    'parents': [folder_id]
+                                }
+                                media = MediaIoBaseUpload(video_content, mimetype='video/mp4')
+                                drive_service.files().create(
+                                    body=file_metadata,
+                                    media_body=media,
+                                    fields='id'
+                                ).execute()
+
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
                         self.retry(countdown=10)  # Retry after 10 seconds
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-
+        
 def share_folder_with_email(drive_service, folder_name, email, recordings_folder_id):
     # Check if the folder already exists within "Automated Zoom Recordings"
     results = drive_service.files().list(
