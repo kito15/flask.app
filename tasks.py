@@ -16,6 +16,8 @@ from requests.exceptions import ConnectionError, ChunkedEncodingError
 celery = Celery('task', broker='redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759')
 redis_client = redis.from_url("redis://default:2qCxa3AEmJTH61oG4oa8@containers-us-west-90.railway.app:7759")
 
+CHUNK_SIZE = 1024 * 1024
+
 @celery.task(bind=True, max_retries=3)
 def uploadFiles(self, serialized_credentials, recordings):
     try:
@@ -98,10 +100,7 @@ def uploadFiles(self, serialized_credentials, recordings):
                 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        response = requests.get(download_url)
-                        response.raise_for_status()
-                        video_content = response.content
-                        video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
+                        response = requests.get(download_url, stream=True)
 
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
@@ -116,17 +115,31 @@ def uploadFiles(self, serialized_credentials, recordings):
                             print(f"Skipping upload of '{video_filename}' as it already exists.")
                             continue
 
-                        # Upload the video to the folder in Google Drive
+                        # Upload the video to the folder in Google Drive (in chunks)
                         file_metadata = {
                             'name': video_filename,
                             'parents': [folder_id]
                         }
-                        media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
-                        drive_service.files().create(
-                            body=file_metadata,
-                            media_body=media,
-                            fields='id'
-                        ).execute()
+
+                        media = MediaIoBaseUpload(
+                            io.BytesIO(),
+                            mimetype='video/mp4',
+                            chunksize=CHUNK_SIZE,
+                            resumable=True
+                        )
+
+                        # Stream the video content in chunks
+                        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                            if chunk:
+                                media.resumable_upload = True
+                                media.bytes_uploaded = media.bytes_uploaded + len(chunk)
+                                media.file_handle = io.BytesIO(chunk)
+                                upload_progress, response = drive_service.files().create(
+                                    body=file_metadata,
+                                    media_body=media,
+                                    fields='id',
+                                    supportsTeamDrives=True
+                                ).next_chunk()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
