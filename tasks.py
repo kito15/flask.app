@@ -1,5 +1,6 @@
 import requests
 import io
+import pickle
 import tempfile
 from celery import Celery
 from datetime import datetime
