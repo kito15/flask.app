@@ -16,8 +16,9 @@ def download_zoom_recordings():
 
     eastern_tz = pytz.timezone('US/Eastern')
     
-    end_date = datetime(2023, 7, 14)
-    start_date = datetime(2023, 7, 13)
+    end_date = datetime.now(eastern_tz)
+    start_date = end_date - timedelta(days=1)
+    
     all_recordings = []
     current_date = end_date
 
