@@ -98,10 +98,11 @@ def uploadFiles(self, serialized_credentials, recordings):
                 video_filename = f"{topics}_{date_string}.mp4"
                 download_url = files['download_url']
                 
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
+               if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
                         response = requests.get(download_url, stream=True)
-                      
+
+                        # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
                         existing_files = drive_service.files().list(
                             q=query,
@@ -127,6 +128,7 @@ def uploadFiles(self, serialized_credentials, recordings):
                             resumable=True
                         )
 
+                        # Stream the video content in chunks
                         with io.BytesIO() as file_stream:
                             for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
                                 if chunk:
@@ -151,10 +153,12 @@ def uploadFiles(self, serialized_credentials, recordings):
                                     while response is None:
                                         _, response = request.next_chunk()
 
+                        # Close the response to release resources
+                        response.close()
+
                     except (ConnectionError, ChunkedEncodingError) as e:
                         print(f"Error occurred while downloading recording: {str(e)}")
                         self.retry(countdown=10)  # Retry after 10 seconds
-
     except Exception as e:
         print(f"An error occurred: {str(e)}")
 
