@@ -47,6 +47,7 @@ def uploadFiles(self, serialized_credentials, recordings):
             topics = recording['topic']
             folder_name = topics.replace(" ", "_")  # Replacing spaces with underscores
             folder_name = folder_name.replace("'", "\\'")  # Escape single quotation mark
+            video_content = io.BytesIO()
             
             folder_urls_data = redis_client.get("folder_urls")
             if folder_urls_data:
