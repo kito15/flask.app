@@ -10,6 +10,7 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 from google.oauth2 import credentials as google_credentials
+from google.resumable_media import requests as resumable_requests
 from requests.exceptions import ConnectionError, ChunkedEncodingError
 
 # Create a Celery instance
@@ -129,14 +130,12 @@ def uploadFiles(self, serialized_credentials, recordings):
                         )
 
                         # Chunked upload the video content
-                        for chunk in response.iter_content(chunk_size=1024 * 1024):  # 1 MB chunks, you can adjust this size
-                            if chunk:
-                                media.resumable_progress += len(chunk)
-                                media._fd.seek(media.resumable_progress)
-                                media._fd.write(chunk)
+                        chunk_size = 1024 * 1024  # 1 MB chunks, you can adjust this size
+                        upload = resumable_requests.ResumableUpload(request, io.BytesIO(response.content), chunk_size=chunk_size)
+                        while not upload.finished:
+                            _, upload = upload.next_chunk(http=response)
 
                         # Finalize the upload
-                        media._fd.seek(0)
                         request.execute()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
