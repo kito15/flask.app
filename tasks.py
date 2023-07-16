@@ -95,9 +95,10 @@ def uploadFiles(self, serialized_credentials, recordings):
                 date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
                 video_filename = f"{topics}_{date_string}.mp4"
                 download_url = files['download_url']
-            
+                
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
+                        # Download the video in chunks to avoid loading the entire video into memory
                         response = requests.get(download_url, stream=True)
                         response.raise_for_status()
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
@@ -130,10 +131,12 @@ def uploadFiles(self, serialized_credentials, recordings):
                         # Chunked upload the video content
                         for chunk in response.iter_content(chunk_size=1024 * 1024):  # 1 MB chunks, you can adjust this size
                             if chunk:
-                                media.file.write(chunk)
-                                print(f"Uploaded {media.resumable_progress} bytes")
+                                media.resumable_progress += len(chunk)
+                                media._fd.seek(media.resumable_progress)
+                                media._fd.write(chunk)
 
-                        media.file.seek(0)
+                        # Finalize the upload
+                        media._fd.seek(0)
                         request.execute()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
