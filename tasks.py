@@ -97,7 +97,7 @@ def uploadFiles(self, serialized_credentials, recordings):
                 video_filename = f"{topics}_{date_string}.mp4"
                 download_url = files['download_url']
 
-                if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
+                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
                         response = requests.get(download_url, stream=True)
                         response.raise_for_status()
@@ -126,6 +126,9 @@ def uploadFiles(self, serialized_credentials, recordings):
                             for chunk in response.iter_content(chunk_size=4096 * 4096):  # Chunks of 1MB
                                 if chunk:
                                     fd.write(chunk)
+
+                            # Seek back to the beginning of the file before uploading
+                            fd.seek(0)
 
                         drive_service.files().create(
                             body=file_metadata,
