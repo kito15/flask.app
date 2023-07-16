@@ -3,7 +3,6 @@ import io
 import redis
 import json
 import pickle
-import httplib2
 from celery import Celery
 from datetime import datetime
 import urllib.parse
@@ -99,9 +98,9 @@ def uploadFiles(self, serialized_credentials, recordings):
                 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        # Download the video in chunks to avoid loading the entire video into memory
-                        response = requests.get(download_url, stream=True)
+                        response = requests.get(download_url)
                         response.raise_for_status()
+                        video_content = response.content
                         video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
 
                         # Check if a file with the same name already exists in the folder
@@ -117,32 +116,20 @@ def uploadFiles(self, serialized_credentials, recordings):
                             print(f"Skipping upload of '{video_filename}' as it already exists.")
                             continue
 
-                        # Upload the video to the folder in Google Drive in chunks
+                        # Upload the video to the folder in Google Drive
                         file_metadata = {
                             'name': video_filename,
                             'parents': [folder_id]
                         }
-                        media = MediaIoBaseUpload(io.BytesIO(), mimetype='video/mp4', chunksize=1024 * 1024, resumable=True)
-                        request = drive_service.files().create(
+                        media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
+                        drive_service.files().create(
                             body=file_metadata,
                             media_body=media,
                             fields='id'
-                        )
-
-                        # Chunked upload the video content
-                        chunk_size = 1024 * 1024  # 1 MB chunks, you can adjust this size
-                        media_fd = io.BytesIO(response.content)
-                        while True:
-                            chunk = media_fd.read(chunk_size)
-                            if not chunk:
-                                break
-                            request.resumable_upload(chunk)
-                        response = None
-                        while response is None:
-                            _, response = request.next_chunk()
+                        ).execute()
 
                     except (ConnectionError, ChunkedEncodingError) as e:
-                        print(f"Error occurred while downloading or uploading recording: {str(e)}")
+                        print(f"Error occurred while downloading recording: {str(e)}")
                         self.retry(countdown=10)  # Retry after 10 seconds
 
     except Exception as e:
