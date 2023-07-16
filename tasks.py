@@ -2,6 +2,7 @@ import requests
 import io
 import redis
 import json
+import tempfile
 import pickle
 from celery import Celery
 from datetime import datetime
