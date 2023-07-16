@@ -117,7 +117,7 @@ def uploadFiles(self, serialized_credentials, recordings):
 
                         # Capture the video content in a BytesIO object
                         video_content = io.BytesIO()
-                        for chunk in response.iter_content(chunk_size=1024 * 1024):  # Chunks of 1MB
+                        for chunk in response.iter_content(chunk_size=2048 * 2048):  # Chunks of 2MB
                             if chunk:
                                 video_content.write(chunk)
 
