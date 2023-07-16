@@ -1,9 +1,6 @@
 import requests
 import io
-import redis
-import json
 import tempfile
-import pickle
 from celery import Celery
 from datetime import datetime
 import urllib.parse
@@ -99,9 +96,10 @@ def uploadFiles(self, serialized_credentials, recordings):
 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
                     try:
-                        # Use streaming to download the video content in chunks
-                        response = requests.get(download_url, stream=True)
+                        response = requests.get(download_url)
                         response.raise_for_status()
+                        video_content = response.content
+                        video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
 
                         # Check if a file with the same name already exists in the folder
                         query = f"name='{video_filename}' and '{folder_id}' in parents"
@@ -116,12 +114,12 @@ def uploadFiles(self, serialized_credentials, recordings):
                             print(f"Skipping upload of '{video_filename}' as it already exists.")
                             continue
 
-                        # Upload the video to the folder in Google Drive using streaming
+                        # Upload the video to the folder in Google Drive
                         file_metadata = {
                             'name': video_filename,
                             'parents': [folder_id]
                         }
-                        media = MediaIoBaseUpload(io.BytesIO(response.content), mimetype='video/mp4', chunksize=4096)
+                        media = MediaIoBaseUpload(io.BytesIO(video_content), mimetype='video/mp4')
                         drive_service.files().create(
                             body=file_metadata,
                             media_body=media,
@@ -134,7 +132,7 @@ def uploadFiles(self, serialized_credentials, recordings):
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
-        
+
 def share_folder_with_email(drive_service, folder_name, email, recordings_folder_id):
     # Check if the folder already exists within "Automated Zoom Recordings"
     results = drive_service.files().list(
