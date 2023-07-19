@@ -95,6 +95,7 @@ def uploadFiles(self, serialized_credentials, recordings):
                 start_datetime = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
                 date_string = start_datetime.strftime("%Y-%m-%d_%H-%M-%S")  # Updated format
                 video_filename = f"{topics}_{date_string}.mp4"
+                video_filename = video_filename.replace("'", "\\'")  # Escape single quotation mark
                 download_url = files['download_url']
                 
                 if files['status'] == 'completed' and files['file_extension'] == 'MP4' and recording['duration'] >= 10:
